@@ -1,0 +1,1670 @@
+
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLM 知识图谱可视化</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --primary-color: #4361ee;
+  --secondary-color: #3a0ca3;
+  --accent-color: #4cc9f0;
+  --light-bg: #f8fafc;
+  --dark-bg: #1e293b;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+#container {
+  display: flex;
+  height: 100vh;
+  gap: 16px;
+  padding: 16px;
+  position: relative;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  transition: var(--transition);
+  border: 1px solid var(--border-color);
+  min-width: 320px;
+}
+
+.sidebar-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sidebar-header h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-header h3 i {
+  font-size: 16px;
+}
+
+.sidebar-header p {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+.sidebar-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 搜索区域 */
+.search-container {
+  position: relative;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  z-index: 2;
+  font-size: 14px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-color);
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--light-bg);
+  transition: var(--transition);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+  background: white;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* 结果列表 */
+.results-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.results-count {
+  background: var(--primary-color);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  min-width: 24px;
+  text-align: center;
+}
+
+#results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 100px;
+}
+
+.result-item {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: white;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.result-item:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+  background: linear-gradient(to right, #f0f7ff, white);
+}
+
+.result-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.result-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-name {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 2px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.result-id {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: 'Monaco', 'Menlo', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 可视化区域 */
+#view {
+  flex: 1;
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  background: white;
+  min-width: 0;
+}
+
+#view svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+}
+
+.control-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+  font-size: 14px;
+}
+
+.control-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* 节点样式 - 性能优化 */
+.node circle {
+  stroke: white;
+  stroke-width: 1.5px;
+  cursor: pointer;
+  transition: none;
+}
+
+.node text {
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  fill: var(--text-primary);
+  text-shadow: 0 1px 2px white;
+  transition: none;
+}
+
+/* 中心节点（父节点）样式 - 修改为黑圈白底黑字 */
+.node.parent circle {
+  fill: #ffffff !important;
+  stroke: #000000 !important;
+  stroke-width: 2.5px;
+}
+
+.node.parent text {
+  fill: #000000 !important;
+  font-weight: 700;
+}
+
+.link {
+  stroke: #cbd5e1;
+  stroke-width: 1.5;
+  transition: none;
+}
+
+.link-label {
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--text-secondary);
+  pointer-events: none;
+  transition: none;
+}
+
+.fade {
+  opacity: 0.05;
+}
+
+.link-label.fade {
+  opacity: 0 !important;
+}
+
+.highlight-node circle {
+  stroke-width: 2px;
+  stroke: var(--accent-color);
+  filter: drop-shadow(0 0 4px rgba(76, 201, 240, 0.4));
+  r: 8;
+}
+
+.highlight-link {
+  stroke-width: 2;
+  stroke: var(--primary-color);
+}
+
+.highlight-label {
+  font-weight: 700;
+  fill: var(--primary-color);
+}
+
+/* 详情面板 */
+#detailWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.detail-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* 父节点详情图标样式 */
+.detail-icon.parent {
+  background: #ffffff !important;
+  border: 2px solid #000000;
+}
+
+.detail-icon.parent i {
+  color: #000000 !important;
+}
+
+.detail-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-name {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-id {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: 'Monaco', 'Menlo', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.properties-section {
+  background: var(--light-bg);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.section-title i {
+  color: var(--primary-color);
+  font-size: 12px;
+}
+
+.property-item {
+  display: flex;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--border-color);
+  font-size: 12px;
+}
+
+.property-item:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.property-key {
+  flex: 0 0 80px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.property-value {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.relations-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.relation-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  background: var(--light-bg);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.relation-tab {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.relation-tab.active {
+  background: white;
+  color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.relations-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.relation-item {
+  padding: 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  border: 1px solid var(--border-color);
+}
+
+/* 出边使用浅绿色底色 */
+.relation-item.out {
+  background: #f0f9f4 !important;
+}
+
+/* 入边使用浅黄色底色 */
+.relation-item.in {
+  background: #fff8e1 !important;
+}
+
+.relation-item:hover {
+  border-color: var(--primary-color);
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.relation-direction {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--success-color), #34d399);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.relation-direction.in {
+  background: linear-gradient(135deg, var(--warning-color), #fbbf24);
+}
+
+.relation-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.relation-type {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.relation-target {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: 'Monaco', 'Menlo', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 20px 12px;
+  color: var(--text-secondary);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.empty-icon {
+  font-size: 32px;
+  color: var(--border-color);
+  margin-bottom: 12px;
+}
+
+.empty-text {
+  font-size: 13px;
+  margin: 0;
+}
+
+/* 加载状态 */
+.loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* 统计信息 */
+.stats-info {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  #container {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: 300px;
+  }
+  
+  #view {
+    height: 500px;
+  }
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 性能优化类 */
+.perf-optimized * {
+  transition: none !important;
+  animation: none !important;
+}
+
+.copyright {
+  text-align: center;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 搜索结果分组 */
+.results-group {
+  margin-bottom: 12px;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  background: var(--light-bg);
+  border-radius: var(--radius-sm);
+}
+
+.group-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.group-title {
+  flex: 1;
+}
+
+.group-count {
+  background: var(--primary-color);
+  color: white;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+}
+
+/* 父节点搜索结果图标样式 */
+.result-item.parent .result-icon {
+  background: #ffffff !important;
+  border: 2px solid #000000;
+}
+
+.result-item.parent .result-icon i {
+  color: #000000 !important;
+}
+</style>
+</head>
+
+<body>
+<div id="container">
+  <!-- 左侧搜索栏 -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-project-diagram"></i> CLM 知识图谱</h3>
+      <p class="copyright">Copyright © 2025 Mlab-mzg</p>
+    </div>
+    
+    <div class="sidebar-content">
+      <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input id="search" class="search-input" type="text" placeholder="搜索节点 ID、名称或属性..."/>
+      </div>
+      
+      <div class="results-title">
+        <span>搜索结果</span>
+        <span id="resultsCount" class="results-count">0</span>
+      </div>
+      
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <!-- 可视化主区域 -->
+  <div id="view">
+    <svg></svg>
+    
+    <div class="controls">
+      <div class="control-btn" id="zoomIn" title="放大">
+        <i class="fas fa-plus"></i>
+      </div>
+      <div class="control-btn" id="zoomOut" title="缩小">
+        <i class="fas fa-minus"></i>
+      </div>
+      <div class="control-btn" id="resetView" title="重置视图">
+        <i class="fas fa-crosshairs"></i>
+      </div>
+      <div class="control-btn" id="centerGraph" title="居中图表">
+        <i class="fas fa-expand-arrows-alt"></i>
+      </div>
+      <div class="control-btn" id="toggleLabels" title="切换标签">
+        <i class="fas fa-font"></i>
+      </div>
+    </div>
+    
+    <div class="stats-info" id="statsInfo">节点: 0 | 连接: 0</div>
+  </div>
+
+  <!-- 右侧详情栏 -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-info-circle"></i> 节点详情</h3>
+      <p class="copyright">Copyright © 2025 Mlab-mzg</p>
+    </div>
+    
+    <div class="sidebar-content">
+      <div id="detailWrap">
+        <!-- 节点详情区域 -->
+        <div id="detail">
+          <div class="empty-state">
+            <div class="empty-icon">
+              <i class="fas fa-mouse-pointer"></i>
+            </div>
+            <p class="empty-text">点击图谱中的节点查看详情</p>
+          </div>
+        </div>
+        
+        <!-- 关系区域 -->
+        <div class="relations-section" style="display: none;" id="relationsSection">
+          <div class="relation-tabs">
+            <button class="relation-tab active" data-tab="out">出边</button>
+            <button class="relation-tab" data-tab="in">入边</button>
+          </div>
+          
+          <div class="relations-list" id="relationsList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="loading" class="loading" style="display: none;">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">正在加载图谱...</div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+
+<script>
+const graph = {"nodes": [{"id": "0", "label": "CLM", "properties": {"描述": "CLM（Community Land Model）是社区地球系统模型（CESM）中的陆面过程模型，能够模拟复杂的生物地球物理、水文及生物地球化学过程"}}, {"id": "1", "label": "build_component_clm", "properties": {"描述": "构建 CLM（陆面模型）组件并启用特定功能"}}, {"id": "2", "label": "build_component_ctsm", "properties": {"描述": "构建 CTSM（陆地生态系统模型）组件"}}, {"id": "3", "label": "build_component_mosart", "properties": {"描述": "构建 MOSART（水文路由模型）组件"}}, {"id": "4", "label": "build_def", "properties": {"描述": "定义和初始化模型的基础配置和参数"}}, {"id": "5", "label": "build_derived", "properties": {"描述": "计算和存储模型的派生变量和中间结果"}}, {"id": "6", "label": "build_grid", "properties": {"描述": "设置模型计算所需的网格分辨率和拓扑结构"}}, {"id": "7", "label": "build_macros", "properties": {"描述": "定义编译时的宏变量，如常量和条件预处理"}}, {"id": "8", "label": "build_status", "properties": {"描述": "跟踪模型构建的成功与否，输出编译状态信息"}}, {"id": "9", "label": "case.run", "properties": {"描述": "控制模型运行时的参数、队列、时间等设置"}}, {"id": "10", "label": "case.st_archive", "properties": {"描述": "管理模型运行数据的归档，包括中间文件和日志"}}, {"id": "11", "label": "case_comp", "properties": {"描述": "配置模型中使用的各个组件及其类型"}}, {"id": "12", "label": "case_comps", "properties": {"描述": "设置各个模型组件的根目录路径"}}, {"id": "13", "label": "case_def", "properties": {"描述": "定义模型案例的基本信息和存放目录"}}, {"id": "14", "label": "case_der", "properties": {"描述": "设置与模型案例相关的派生文件和工具脚本"}}, {"id": "15", "label": "case_desc", "properties": {"描述": "提供关于模型案例的详细描述信息"}}, {"id": "16", "label": "case_git", "properties": {"描述": "记录与 Git 版本控制系统的集成信息"}}, {"id": "17", "label": "case_last", "properties": {"描述": "记录上一次模型运行或配置的信息"}}, {"id": "18", "label": "config_batch", "properties": {"描述": "配置和管理批处理任务及其资源分配"}}, {"id": "19", "label": "data_models", "properties": {"描述": "管理输入数据的模型配置，如气候、土壤数据等"}}, {"id": "20", "label": "external_tools", "properties": {"描述": "集成外部工具，如数据处理、优化工具等"}}, {"id": "21", "label": "mach_pes", "properties": {"描述": "配置并行计算时使用的机器和处理单元（如 CPU）"}}, {"id": "22", "label": "mach_pes_last", "properties": {"描述": "记录上一次并行计算时使用的处理单元配置"}}, {"id": "23", "label": "med_history", "properties": {"描述": "配置和记录模型的历史输出数据"}}, {"id": "24", "label": "run_begin_stop_restart", "properties": {"描述": "配置模型运行时是否继续上次任务，或从头开始"}}, {"id": "25", "label": "run_budgets", "properties": {"描述": "控制是否输出能量和物质平衡的预算文件"}}, {"id": "26", "label": "run_co2", "properties": {"描述": "配置模型中大气 CO₂ 浓度的初始值或变化序列"}}, {"id": "27", "label": "run_component_cpl", "properties": {"描述": "管理模型中不同组件之间的数据交换与同步"}}, {"id": "28", "label": "run_component_ctsm", "properties": {"描述": "启动并运行 CTSM（陆地生态系统模型）组件"}}, {"id": "29", "label": "run_component_datm", "properties": {"描述": "启动并运行 DATM（大气强迫数据模型）组件"}}, {"id": "30", "label": "run_component_mosart", "properties": {"描述": "启动并运行 MOSART（水文模型）组件"}}, {"id": "31", "label": "run_coupling", "properties": {"描述": "管理模型组件之间的耦合过程和数据交换"}}, {"id": "32", "label": "run_data_archive", "properties": {"描述": "控制是否将模型运行的结果数据进行归档保存"}}, {"id": "33", "label": "run_debug", "properties": {"描述": "配置调试信息的输出，帮助开发人员调试模型"}}, {"id": "34", "label": "run_desc", "properties": {"描述": "记录模型运行的详细描述信息和元数据"}}, {"id": "35", "label": "run_din", "properties": {"描述": "配置模型所需的强迫场、网格、初始条件等输入数据"}}, {"id": "36", "label": "run_domain", "properties": {"描述": "设置模型的空间域，包括网格文件、区域等"}}, {"id": "37", "label": "run_dout", "properties": {"描述": "设置模型运行结果的输出目录和文件格式"}}, {"id": "38", "label": "run_flags", "properties": {"描述": "设置运行时的各种标志位，控制模型的行为"}}, {"id": "39", "label": "run_glc", "properties": {"描述": "设置和控制冰川模块的计算和模拟"}}, {"id": "40", "label": "run_metadata", "properties": {"描述": "保存和管理模型的元数据，供后续分析使用"}}, {"id": "41", "label": "run_mpi", "properties": {"描述": "配置 MPI（消息传递接口），支持并行计算"}}, {"id": "42", "label": "run_physics", "properties": {"描述": "控制和模拟模型中的物理过程，如能量、热量、水循环等"}}, {"id": "43", "label": "run_pio", "properties": {"描述": "管理和优化模型的输入输出操作，提升 I/O 性能"}}, {"id": "44", "label": "CLM_USE_PETSC", "properties": {"描述": "意义：控制 CLM（陆面模型）组件是否启用 PETSC 数值库\n常见可用值：TRUE, FALSE"}}, {"id": "45", "label": "LILAC_MODE", "properties": {"描述": "意义：控制 CTSM 是否启用 LILAC（冻土碳循环模块）\n常见可用值：on, off"}}, {"id": "46", "label": "MOSART_FLOOD_MODE", "properties": {"描述": "意义：MOSART（水文路由模型）的洪水模拟模式（NULL 表示未启用洪水模拟）\n常见可用值：NULL, ACTIVE（启用）, INACTIVE（禁用）"}}, {"id": "47", "label": "MOSART_MODE", "properties": {"描述": "意义：MOSART 组件的整体运行状态\n常见可用值：ACTIVE（激活）, INACTIVE（未激活）"}}, {"id": "48", "label": "BUILD_THREADED", "properties": {"描述": "意义：控制编译过程是否启用多线程支持\n常见可用值：TRUE, FALSE"}}, {"id": "49", "label": "CALENDAR", "properties": {"描述": "意义：模型运行使用的日历类型（决定是否包含闰年）\n常见可用值：NO_LEAP（无闰年）, GREGORIAN（公历）, JULIAN（儒略历）"}}, {"id": "50", "label": "CIME_OUTPUT_ROOT", "properties": {"描述": "意义：CIME 框架的输出根目录（存放编译结果、运行文件等）\n常见可用值：自定义绝对路径"}}, {"id": "51", "label": "COMP_INTERFACE", "properties": {"描述": "意义：模型各组件间的通信接口标准\n常见可用值：nuopc, mct（两种主流耦合接口）"}}, {"id": "52", "label": "DEBUG", "properties": {"描述": "意义：控制编译是否启用调试模式（调试模式保留更多日志，性能降低）\n常见可用值：TRUE, FALSE"}}, {"id": "53", "label": "EXEROOT", "properties": {"描述": "意义：编译生成的可执行文件及中间文件存放目录\n常见可用值：$CIME_OUTPUT_ROOT/<CASE>/bld（默认路径）"}}, {"id": "54", "label": "FORCE_BUILD_SMP", "properties": {"描述": "意义：强制编译 SMP（对称多处理）版本（通常用于兼容性测试）\n常见可用值：TRUE, FALSE"}}, {"id": "55", "label": "GMAKE", "properties": {"描述": "意义：指定编译使用的 make 工具路径\n常见可用值：make, gmake（不同系统默认工具）"}}, {"id": "56", "label": "GMAKE_J", "properties": {"描述": "意义：make 编译时的并行任务数（影响编译速度，需匹配 CPU 核心数）\n常见可用值：正整数（如 4, 8, 16）"}}, {"id": "57", "label": "GPU_TYPE", "properties": {"描述": "意义：指定编译适配的 GPU 类型（none 表示不使用 GPU 加速）\n常见可用值：none, nvidia（英伟达）, amd（超微）"}}, {"id": "58", "label": "KOKKOS_GPU_OFFLOAD", "properties": {"描述": "意义：控制是否启用 KOKKOS 框架的 GPU 卸载（GPU 加速相关）\n常见可用值：TRUE, FALSE"}}, {"id": "59", "label": "MPI_GPU_WRAPPER_SCRIPT", "properties": {"描述": "意义：GPU MPI 包装脚本路径（GPU 加速时用于适配 MPI）\n常见可用值：自定义脚本路径，空值（不使用）"}}, {"id": "60", "label": "OPENACC_GPU_OFFLOAD", "properties": {"描述": "意义：控制是否启用 OPENACC 指令的 GPU 卸载\n常见可用值：TRUE, FALSE"}}, {"id": "61", "label": "OPENMP_GPU_OFFLOAD", "properties": {"描述": "意义：控制是否启用 OPENMP 指令的 GPU 卸载\n常见可用值：TRUE, FALSE"}}, {"id": "62", "label": "SUPPORTED_BY", "properties": {"描述": "意义：模型配置的维护者 / 负责人标识\n常见可用值：用户名、团队名"}}, {"id": "63", "label": "USE_ALBANY", "properties": {"描述": "意义：控制是否使用 ALBANY 有限元库（多用于高级数值模拟）\n常见可用值：TRUE, FALSE"}}, {"id": "64", "label": "USE_ESMF_LIB", "properties": {"描述": "意义：控制是否使用 ESMF（地球系统建模框架）库进行组件耦合\n常见可用值：TRUE, FALSE"}}, {"id": "65", "label": "USE_MOAB", "properties": {"描述": "意义：控制是否使用 MOAB 网格库（处理非结构化网格）\n常见可用值：TRUE, FALSE"}}, {"id": "66", "label": "USE_PETSC", "properties": {"描述": "意义：控制全局是否启用 PETSC 数值库（适用于多组件）\n常见可用值：TRUE, FALSE"}}, {"id": "67", "label": "USE_TRILINOS", "properties": {"描述": "意义：控制是否使用 TRILINOS 数值库（多用于并行求解器）\n常见可用值：TRUE, FALSE"}}, {"id": "68", "label": "INCROOT", "properties": {"描述": "意义：编译生成的头文件（.h）存放目录（由 EXEROOT 推导）\n常见可用值：$EXEROOT/lib/include（固定推导路径）"}}, {"id": "69", "label": "LIBROOT", "properties": {"描述": "意义：编译生成的库文件（.a/.so）存放目录\n常见可用值：$EXEROOT/lib（固定推导路径）"}}, {"id": "70", "label": "OBJROOT", "properties": {"描述": "意义：编译生成的目标文件（.o）存放目录\n常见可用值：$EXEROOT（固定推导路径）"}}, {"id": "71", "label": "PERL5LIB", "properties": {"描述": "意义：Perl5 库的额外搜索路径（模型脚本依赖）\n常见可用值：Perl 库路径，空值（使用系统默认）"}}, {"id": "72", "label": "SHAREDLIBROOT", "properties": {"描述": "意义：共享库文件存放目录\n常见可用值：$EXEROOT（固定推导路径）"}}, {"id": "73", "label": "ATM_GRID", "properties": {"描述": "意义：大气组件（DATM）的水平分辨率\n常见可用值：1.9x2.5, 0.9x1.25, 0.5x0.5（纬度 × 经度）"}}, {"id": "74", "label": "ATM_NX", "properties": {"描述": "意义：大气网格的经向（东西向）格点数（由 ATM_GRID 决定）\n常见可用值：正整数（如 144, 320）"}}, {"id": "75", "label": "ATM_NY", "properties": {"描述": "意义：大气网格的纬向（南北向）格点数（由 ATM_GRID 决定）\n常见可用值：正整数（如 96, 160）"}}, {"id": "76", "label": "GLC_GRID", "properties": {"描述": "意义：冰川组件（SGLC）的网格分辨率（null 表示未启用冰川组件）\n常见可用值：null, 1.9x2.5（与其他组件兼容分辨率）"}}, {"id": "77", "label": "GLC_NX", "properties": {"描述": "意义：冰川网格的经向格点数（GLC_GRID 为 null 时为 0）\n常见可用值：正整数，0（未启用）"}}, {"id": "78", "label": "GLC_NY", "properties": {"描述": "意义：冰川网格的纬向格点数（GLC_GRID 为 null 时为 0）\n常见可用值：正整数，0（未启用）"}}, {"id": "79", "label": "GRID", "properties": {"描述": "意义：模型整体网格标识（整合各组件分辨率）\n常见可用值：格式：a%<ATM_GRID>l%<LND_GRID>...（组件分辨率拼接）"}}, {"id": "80", "label": "ICE_GRID", "properties": {"描述": "意义：海冰组件（SICE）的网格分辨率（null 表示未启用海冰组件）\n常见可用值：null, 1.9x2.5（兼容分辨率）"}}, {"id": "81", "label": "ICE_NCAT", "properties": {"描述": "意义：海冰组件的类别数（未启用时为 1）\n常见可用值：正整数"}}, {"id": "82", "label": "ICE_NX", "properties": {"描述": "意义：海冰网格的经向格点数（ICE_GRID 为 null 时为 0）\n常见可用值：正整数，0（未启用）"}}, {"id": "83", "label": "ICE_NY", "properties": {"描述": "意义：海冰网格的纬向格点数（ICE_GRID 为 null 时为 0）\n常见可用值：正整数，0（未启用）"}}, {"id": "84", "label": "LND_GRID", "properties": {"描述": "意义：陆面组件（CLM）的水平分辨率\n常见可用值：1.9x2.5, 0.9x1.25（需与 ATM_GRID 兼容）"}}, {"id": "85", "label": "LND_NX", "properties": {"描述": "意义：陆面网格的经向格点数（由 LND_GRID 决定）\n常见可用值：正整数（如 144）"}}, {"id": "86", "label": "LND_NY", "properties": {"描述": "意义：陆面网格的纬向格点数（由 LND_GRID 决定）\n常见可用值：正整数（如 96）"}}, {"id": "87", "label": "MASK_GRID", "properties": {"描述": "意义：网格掩码的分辨率（用于区域筛选）\n常见可用值：gx1v7（1°×1°）, gx3v7（3°×3°）"}}, {"id": "88", "label": "OCN_GRID", "properties": {"描述": "意义：海洋组件（SOCN）的网格分辨率（null 表示未启用海洋组件）\n常见可用值：null, 1.9x2.5（兼容分辨率）"}}, {"id": "89", "label": "OCN_NX", "properties": {"描述": "意义：海洋网格的经向格点数（OCN_GRID 为 null 时为 0）\n常见可用值：正整数，0（未启用）"}}, {"id": "90", "label": "OCN_NY", "properties": {"描述": "意义：海洋网格的纬向格点数（OCN_GRID 为 null 时为 0）\n常见可用值：正整数，0（未启用）"}}, {"id": "91", "label": "ROF_GRID", "properties": {"描述": "意义：水文路由组件（MOSART）的水平分辨率\n常见可用值：r05（0.5°×0.5°）, r10（1.0°×1.0°）"}}, {"id": "92", "label": "ROF_NX", "properties": {"描述": "意义：水文路由网格的经向格点数（由 ROF_GRID 决定）\n常见可用值：正整数（如 720）"}}, {"id": "93", "label": "ROF_NY", "properties": {"描述": "意义：水文路由网格的纬向格点数（由 ROF_GRID 决定）\n常见可用值：正整数（如 360）"}}, {"id": "94", "label": "WAV_GRID", "properties": {"描述": "意义：波浪组件（SWAV）的网格分辨率（null 表示未启用波浪组件）\n常见可用值：null, 1.9x2.5（兼容分辨率）"}}, {"id": "95", "label": "WAV_NX", "properties": {"描述": "意义：波浪网格的经向格点数（WAV_GRID 为 null 时为 0）\n常见可用值：正整数，0（未启用）"}}, {"id": "96", "label": "WAV_NY", "properties": {"描述": "意义：波浪网格的纬向格点数（WAV_GRID 为 null 时为 0）\n常见可用值：正整数，0（未启用）"}}, {"id": "97", "label": "COMPILER", "properties": {"描述": "意义：模型编译使用的编译器\n常见可用值：intel（英特尔）, gnu（GCC）, pgi（NVIDIA）"}}, {"id": "98", "label": "MPILIB", "properties": {"描述": "意义：编译使用的 MPI 库（消息传递接口，支持并行计算）\n常见可用值：impi（Intel MPI）, openmpi, mvapich2"}}, {"id": "99", "label": "OS", "properties": {"描述": "意义：模型运行的操作系统类型\n常见可用值：LINUX, Darwin（macOS）"}}, {"id": "100", "label": "PIO_CONFIG_OPTS", "properties": {"描述": "意义：PIO（并行 I/O 库）的额外配置选项\n常见可用值：自定义编译选项，空值（默认配置）"}}, {"id": "101", "label": "PIO_VERSION", "properties": {"描述": "意义：模型使用的 PIO 库版本号\n常见可用值：2, 1（主流版本）"}}, {"id": "102", "label": "BUILD_COMPLETE", "properties": {"描述": "意义：标识模型是否已编译完成\n常见可用值：TRUE（已完成）, FALSE（未完成 / 编译失败）"}}, {"id": "103", "label": "BUILD_STATUS", "properties": {"描述": "意义：编译状态码（0 表示成功，非 0 表示失败）\n常见可用值：0（成功）, 1/2/...（失败代码）"}}, {"id": "104", "label": "NINST_BUILD", "properties": {"描述": "意义：编译的实例数量（多实例运行时使用）\n常见可用值：0（单实例）, 1/2/...（多实例）"}}, {"id": "105", "label": "NINST_VALUE", "properties": {"描述": "意义：实例标识（格式：c<a><l><r>，a/l/r 为实例数）\n常见可用值：c1a1l1r1（默认单实例），自定义标识"}}, {"id": "106", "label": "SMP_BUILD", "properties": {"描述": "意义：SMP 编译标识（0 表示非 SMP，1 表示 SMP）\n常见可用值：0, 1"}}, {"id": "107", "label": "SMP_VALUE", "properties": {"描述": "意义：SMP 实例标识（格式同 NINST_VALUE）\n常见可用值：c0a0l0r0（默认），自定义标识"}}, {"id": "108", "label": "BATCH_COMMAND_FLAGS", "properties": {"描述": "意义：批处理命令（如 qsub/sbatch）的额外参数\n常见可用值：批处理系统参数（如 - n 4），空值（无额外参数）"}}, {"id": "109", "label": "CHARGE_ACCOUNT", "properties": {"描述": "意义：批处理任务的计费账户（集群管理用）\n常见可用值：账户名，none（无计费）"}}, {"id": "110", "label": "JOB_QUEUE", "properties": {"描述": "意义：模型运行任务提交的批处理队列\n常见可用值：队列名（如 normal, high），空值（使用默认队列）"}}, {"id": "111", "label": "JOB_WALLCLOCK_TIME", "properties": {"描述": "意义：模型运行任务的墙钟时间限制\n常见可用值：格式：HH:MM:SS（如 12:00:00），空值（无限制）"}}, {"id": "112", "label": "PROJECT", "properties": {"描述": "意义：关联的项目标识（集群资源分配用）\n常见可用值：项目名，none（无项目）"}}, {"id": "113", "label": "PROJECT_REQUIRED", "properties": {"描述": "意义：控制是否必须指定 PROJECT 才能提交任务\n常见可用值：TRUE, FALSE"}}, {"id": "114", "label": "USER_REQUESTED_QUEUE", "properties": {"描述": "意义：用户手动指定的批处理队列（优先级高于 JOB_QUEUE）\n常见可用值：队列名，空值（未指定）"}}, {"id": "115", "label": "USER_REQUESTED_WALLTIME", "properties": {"描述": "意义：用户手动指定的墙钟时间（优先级高于 JOB_WALLCLOCK_TIME）\n常见可用值：格式：HH:MM:SS，空值（未指定）"}}, {"id": "116", "label": "prereq", "properties": {"描述": "意义：任务运行的前置条件（逻辑表达式）\n常见可用值：逻辑表达式（如 True and not False）"}}, {"id": "117", "label": "template", "properties": {"描述": "意义：批处理脚本的模板文件名称\n常见可用值：template.case.run（默认），自定义模板名"}}, {"id": "118", "label": "BATCH_COMMAND_FLAGS", "properties": {"描述": "意义：结果归档任务（st_archive）的批处理命令额外参数\n常见可用值：批处理系统参数，空值"}}, {"id": "119", "label": "CHARGE_ACCOUNT", "properties": {"描述": "意义：归档任务的计费账户\n常见可用值：账户名，none"}}, {"id": "120", "label": "JOB_QUEUE", "properties": {"描述": "意义：归档任务提交的批处理队列\n常见可用值：队列名，空值"}}, {"id": "121", "label": "JOB_WALLCLOCK_TIME", "properties": {"描述": "意义：归档任务的墙钟时间限制\n常见可用值：格式：HH:MM:SS，空值"}}, {"id": "122", "label": "PROJECT", "properties": {"描述": "意义：归档任务关联的项目标识\n常见可用值：项目名，none"}}, {"id": "123", "label": "PROJECT_REQUIRED", "properties": {"描述": "意义：控制归档任务是否必须指定 PROJECT\n常见可用值：TRUE, FALSE"}}, {"id": "124", "label": "USER_REQUESTED_QUEUE", "properties": {"描述": "意义：用户指定的归档任务批处理队列\n常见可用值：队列名，空值"}}, {"id": "125", "label": "USER_REQUESTED_WALLTIME", "properties": {"描述": "意义：用户指定的归档任务墙钟时间\n常见可用值：格式：HH:MM:SS，空值"}}, {"id": "126", "label": "dependency", "properties": {"描述": "意义：归档任务的依赖任务（需先完成的任务）\n常见可用值：任务名（如 case.run or case.test）"}}, {"id": "127", "label": "prereq", "properties": {"描述": "意义：归档任务的前置条件（逻辑表达式）\n常见可用值：逻辑表达式（如 True）"}}, {"id": "128", "label": "task_count", "properties": {"描述": "意义：归档任务的任务数\n常见可用值：正整数（通常为 1，归档为单任务）"}}, {"id": "129", "label": "tasks_per_node", "properties": {"描述": "意义：归档任务每节点的任务数\n常见可用值：正整数（通常为 1）"}}, {"id": "130", "label": "template", "properties": {"描述": "意义：归档任务批处理脚本的模板文件\n常见可用值：template.st_archive（默认），自定义模板名"}}, {"id": "131", "label": "walltime", "properties": {"描述": "意义：归档任务的墙钟时间限制（固定配置）\n常见可用值：格式：HH:MM:SS"}}, {"id": "132", "label": "COMP_ATM", "properties": {"描述": "意义：大气组件的类型\n常见可用值：datm（数据驱动大气）, cam（社区大气模型）"}}, {"id": "133", "label": "COMP_CLASSES", "properties": {"描述": "意义：模型包含的组件类别列表\n常见可用值：CPL,ATM,LND,ICE,OCN,ROF,GLC,WAV,ESP（全类别）"}}, {"id": "134", "label": "COMP_CPL", "properties": {"描述": "意义：耦合器组件的类型\n常见可用值：cpl（CESM 耦合器）"}}, {"id": "135", "label": "COMP_ESP", "properties": {"描述": "意义：地球系统预测组件的类型\n常见可用值：sesp（ stub ESP 组件）"}}, {"id": "136", "label": "COMP_GLC", "properties": {"描述": "意义：冰川组件的类型\n常见可用值：sglc（stub 冰川组件）"}}, {"id": "137", "label": "COMP_ICE", "properties": {"描述": "意义：海冰组件的类型\n常见可用值：sice（stub 海冰组件）"}}, {"id": "138", "label": "COMP_LND", "properties": {"描述": "意义：陆面组件的类型\n常见可用值：clm（社区陆面模型）"}}, {"id": "139", "label": "COMP_OCN", "properties": {"描述": "意义：海洋组件的类型\n常见可用值：socn（stub 海洋组件）"}}, {"id": "140", "label": "COMP_ROF", "properties": {"描述": "意义：水文路由组件的类型\n常见可用值：mosart, rtm"}}, {"id": "141", "label": "COMP_WAV", "properties": {"描述": "意义：波浪组件的类型\n常见可用值：swav（stub 波浪组件）"}}, {"id": "142", "label": "CONTAINER_ENVIRONMENT", "properties": {"描述": "意义：容器环境配置（如 Docker/Singularity）\n常见可用值：容器环境变量，空值（不使用容器）"}}, {"id": "143", "label": "COMP_ROOT_DIR_ATM", "properties": {"描述": "意义：大气组件（DATM）的根目录\n常见可用值：绝对路径"}}, {"id": "144", "label": "COMP_ROOT_DIR_CPL", "properties": {"描述": "意义：耦合器组件（CPL）的根目录\n常见可用值：绝对路径"}}, {"id": "145", "label": "COMP_ROOT_DIR_ESP", "properties": {"描述": "意义：ESP 组件的根目录\n常见可用值：绝对路径"}}, {"id": "146", "label": "COMP_ROOT_DIR_GLC", "properties": {"描述": "意义：冰川组件（SGLC）的根目录\n常见可用值：绝对路径"}}, {"id": "147", "label": "COMP_ROOT_DIR_IAC", "properties": {"描述": "意义：IAC（大气化学）组件的根目录（unset 表示未启用）\n常见可用值：绝对路径，unset"}}, {"id": "148", "label": "COMP_ROOT_DIR_ICE", "properties": {"描述": "意义：海冰组件（SICE）的根目录\n常见可用值：绝对路径"}}, {"id": "149", "label": "COMP_ROOT_DIR_LND", "properties": {"描述": "意义：陆面组件（CLM）的根目录\n常见可用值：绝对路径"}}, {"id": "150", "label": "COMP_ROOT_DIR_OCN", "properties": {"描述": "意义：海洋组件（SOCN）的根目录\n常见可用值：绝对路径"}}, {"id": "151", "label": "COMP_ROOT_DIR_ROF", "properties": {"描述": "意义：水文路由组件（MOSART）的根目录\n常见可用值：绝对路径"}}, {"id": "152", "label": "COMP_ROOT_DIR_WAV", "properties": {"描述": "意义：波浪组件（SWAV）的根目录\n常见可用值：绝对路径"}}, {"id": "153", "label": "CASE", "properties": {"描述": "意义：模型案例的唯一名称（标识当前配置）\n常见可用值：自定义字符串（如 try_I1850Clm50Sp）"}}, {"id": "154", "label": "CASEROOT", "properties": {"描述": "意义：案例配置文件的存放目录（含脚本、参数文件）\n常见可用值：绝对路径（通常在 $SRCROOT/cime/scripts/<CASE>）"}}, {"id": "155", "label": "CIMEROOT", "properties": {"描述": "意义：CIME 框架的根目录\n常见可用值：绝对路径（指向 CTSM 的 cime 子目录）"}}, {"id": "156", "label": "EXTRA_MACHDIR", "properties": {"描述": "意义：额外的机器配置文件目录（补充默认 MACHDIR）\n常见可用值：绝对路径，空值（不使用额外目录）"}}, {"id": "157", "label": "FILES_CONFIG_SPEC", "properties": {"描述": "意义：模型文件配置规范的 XML 文件路径\n常见可用值：绝对路径"}}, {"id": "158", "label": "MACH", "properties": {"描述": "意义：模型运行的机器（服务器）名称（需在 config_machines.xml 中定义）\n常见可用值：机器 hostname（如 hydroffs）"}}, {"id": "159", "label": "MACHDIR", "properties": {"描述": "意义：机器配置文件（如编译器、MPI 路径）的存放目录\n常见可用值：绝对路径"}}, {"id": "160", "label": "NONLOCAL", "properties": {"描述": "意义：控制案例是否为 “非本地”（跨机器访问）\n常见可用值：TRUE, FALSE"}}, {"id": "161", "label": "SRCROOT", "properties": {"描述": "意义：CTSM 模型源代码的根目录\n常见可用值：绝对路径"}}, {"id": "162", "label": "SUPPORTED_BY", "properties": {"描述": "意义：案例配置的维护者 / 负责人\n常见可用值：用户名、团队名"}}, {"id": "163", "label": "CASEBUILD", "properties": {"描述": "意义：案例编译配置文件的存放目录（由 CASEROOT 推导）\n常见可用值：$CASEROOT/Buildconf（固定推导路径）"}}, {"id": "164", "label": "CASEFILE_HEADERS", "properties": {"描述": "意义：案例文件头配置的 XML 文件路径\n常见可用值：绝对路径"}}, {"id": "165", "label": "CASETOOLS", "properties": {"描述": "意义：案例专用工具脚本的存放目录（由 CASEROOT 推导）\n常见可用值：$CASEROOT/Tools（固定推导路径）"}}, {"id": "166", "label": "MODEL", "properties": {"描述": "意义：模型框架名称（此处为 CESM）\n常见可用值：cesm, ctsm（不同框架标识）"}}, {"id": "167", "label": "MODEL_VERSION", "properties": {"描述": "意义：模型版本号（unknown 表示未指定）\n常见可用值：版本号（如 5.3.021），unknown"}}, {"id": "168", "label": "SCRIPTSROOT", "properties": {"描述": "意义：CIME 脚本的根目录（由 CIMEROOT 推导）\n常见可用值：$CIMEROOT/scripts（固定推导路径）"}}, {"id": "169", "label": "UTILROOT", "properties": {"描述": "意义：模型工具脚本的根目录（由 SCRIPTSROOT 推导）\n常见可用值：$SCRIPTSROOT/Tools（固定推导路径）"}}, {"id": "170", "label": "CASE_HASH", "properties": {"描述": "意义：案例配置的唯一哈希值（用于标识配置完整性）\n常见可用值：哈希字符串（SHA-256 格式）"}}, {"id": "171", "label": "REALUSER", "properties": {"描述": "意义：案例的实际创建用户（区别于运行用户）\n常见可用值：用户名"}}, {"id": "172", "label": "USER", "properties": {"描述": "意义：案例的运行用户\n常见可用值：用户名"}}, {"id": "173", "label": "CASE_GIT_REPOSITORY", "properties": {"描述": "意义：案例关联的 Git 仓库地址（用于版本控制）\n常见可用值：Git 仓库 URL，空值（未关联）"}}, {"id": "174", "label": "ARCHIVE_SPEC_FILE", "properties": {"描述": "意义：归档配置规范的 XML 文件路径\n常见可用值：绝对路径"}}, {"id": "175", "label": "BATCH_SPEC_FILE", "properties": {"描述": "意义：批处理配置规范的 XML 文件路径\n常见可用值：绝对路径"}}, {"id": "176", "label": "BUILD_LIB_FILE", "properties": {"描述": "意义：编译库配置文件路径（空值表示使用默认）\n常见可用值：绝对路径，空值"}}, {"id": "177", "label": "CMAKE_MACROS_DIR", "properties": {"描述": "意义：CMAKE 宏文件的存放目录\n常见可用值：绝对路径"}}, {"id": "178", "label": "COMPILERS_SPEC_FILE", "properties": {"描述": "意义：编译器配置规范的 XML 文件路径\n常见可用值：绝对路径"}}, {"id": "179", "label": "COMPSET", "properties": {"描述": "意义：组件集合（定义启用的组件及核心配置）\n常见可用值：1850_XXX（工业前控制）, HIST_XXX（历史模拟）等"}}, {"id": "180", "label": "COMPSETS_SPEC_FILE", "properties": {"描述": "意义：组件集合配置规范的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_LND/cime_config/config_compsets.xml（默认）"}}, {"id": "181", "label": "CONFIG_ATM_FILE", "properties": {"描述": "意义：大气组件配置的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_ATM/cime_config/config_component.xml（默认）"}}, {"id": "182", "label": "CONFIG_CPL_FILE", "properties": {"描述": "意义：耦合器组件配置的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_CPL/cime_config/config_component.xml（默认）"}}, {"id": "183", "label": "CONFIG_CPL_FILE_MODEL_SPECIFIC", "properties": {"描述": "意义：耦合器组件的模型专用配置 XML 文件路径\n常见可用值：绝对路径（含 $MODEL 变量）"}}, {"id": "184", "label": "CONFIG_ESP_FILE", "properties": {"描述": "意义：ESP 组件配置的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_ESP/cime_config/config_component.xml（默认）"}}, {"id": "185", "label": "CONFIG_GLC_FILE", "properties": {"描述": "意义：冰川组件配置的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_GLC/cime_config/config_component.xml（默认）"}}, {"id": "186", "label": "CONFIG_IAC_FILE", "properties": {"描述": "意义：IAC 组件配置的 XML 文件路径（unset 表示未启用）\n常见可用值：$COMP_ROOT_DIR_IAC/cime_config/config_component.xml，unset"}}, {"id": "187", "label": "CONFIG_ICE_FILE", "properties": {"描述": "意义：海冰组件配置的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_ICE/cime_config/config_component.xml（默认）"}}, {"id": "188", "label": "CONFIG_LND_FILE", "properties": {"描述": "意义：陆面组件配置的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_LND/cime_config/config_component.xml（默认）"}}, {"id": "189", "label": "CONFIG_OCN_FILE", "properties": {"描述": "意义：海洋组件配置的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_OCN/cime_config/config_component.xml（默认）"}}, {"id": "190", "label": "CONFIG_ROF_FILE", "properties": {"描述": "意义：水文路由组件配置的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_ROF/cime_config/config_component.xml（默认）"}}, {"id": "191", "label": "CONFIG_WAV_FILE", "properties": {"描述": "意义：波浪组件配置的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_WAV/cime_config/config_component.xml（默认）"}}, {"id": "192", "label": "GRIDS_SPEC_FILE", "properties": {"描述": "意义：网格配置规范的 XML 文件路径\n常见可用值：绝对路径"}}, {"id": "193", "label": "INPUTDATA_SPEC_FILE", "properties": {"描述": "意义：输入数据配置规范的 XML 文件路径\n常见可用值：绝对路径"}}, {"id": "194", "label": "MACHINES_SPEC_FILE", "properties": {"描述": "意义：机器配置规范的 XML 文件路径\n常见可用值：绝对路径"}}, {"id": "195", "label": "NAMELIST_DEFINITION_FILE", "properties": {"描述": "意义：namelist（参数列表）定义文件路径（unset 表示使用默认）\n常见可用值：绝对路径，unset"}}, {"id": "196", "label": "PES_SPEC_FILE", "properties": {"描述": "意义：PES（并行任务分配）配置规范的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_LND/cime_config/config_pes.xml（默认）"}}, {"id": "197", "label": "PIO_SPEC_FILE", "properties": {"描述": "意义：PIO（并行 I/O）配置规范的 XML 文件路径\n常见可用值：绝对路径"}}, {"id": "198", "label": "TESTS_MODS_DIR", "properties": {"描述": "意义：测试修改文件的存放目录\n常见可用值：$COMP_ROOT_DIR_LND/cime_config/testdefs/testmods_dirs（默认）"}}, {"id": "199", "label": "TESTS_SPEC_FILE", "properties": {"描述": "意义：测试用例配置规范的 XML 文件路径\n常见可用值：$COMP_ROOT_DIR_LND/cime_config/testdefs/testlist_clm.xml（默认）"}}, {"id": "200", "label": "USER_MODS_DIR", "properties": {"描述": "意义：用户自定义修改文件的存放目录\n常见可用值：$COMP_ROOT_DIR_LND/cime_config/usermods_dirs（默认）"}}, {"id": "201", "label": "WORKFLOW_SPEC_FILE", "properties": {"描述": "意义：工作流配置规范的 XML 文件路径\n常见可用值：绝对路径"}}, {"id": "202", "label": "BATCH_SYSTEM", "properties": {"描述": "意义：机器使用的批处理系统（none 表示无批处理）\n常见可用值：slurm, pbs, none"}}, {"id": "203", "label": "module_cmd_path", "properties": {"描述": "意义：模块命令（module load）的路径（UNSET 表示使用系统默认）\n常见可用值：绝对路径，UNSET"}}, {"id": "204", "label": "module_init_path", "properties": {"描述": "意义：模块初始化脚本的路径（UNSET 表示使用系统默认）\n常见可用值：绝对路径，UNSET"}}, {"id": "205", "label": "module_system", "properties": {"描述": "意义：模块管理系统类型（UNSET 表示未指定）\n常见可用值：lmod, tcl, UNSET"}}, {"id": "206", "label": "mpirun", "properties": {"描述": "意义：mpirun 命令的路径（空值表示使用系统默认）\n常见可用值：绝对路径，空值"}}, {"id": "207", "label": "FORCE_PROGNOSTIC_FOR_DATAMODELS", "properties": {"描述": "意义：强制数据模型（如 DATM）输出预报变量（通常用于调试）\n常见可用值：TRUE, FALSE"}}, {"id": "208", "label": "DATA_ASSIMILATION", "properties": {"描述": "意义：各组件的数据同化启用状态（列表形式）\n常见可用值：['<COMP>:TRUE/<COMP>:FALSE']（组件状态列表）"}}, {"id": "209", "label": "DATA_ASSIMILATION_CYCLES", "properties": {"描述": "意义：数据同化的循环次数\n常见可用值：正整数"}}, {"id": "210", "label": "DATA_ASSIMILATION_SCRIPT", "properties": {"描述": "意义：数据同化脚本的路径\n常见可用值：绝对路径，空值（不使用数据同化）"}}, {"id": "211", "label": "EXTERNAL_WORKFLOW", "properties": {"描述": "意义：控制是否使用外部工作流（如 ROCOTO）管理任务\n常见可用值：TRUE, FALSE"}}, {"id": "212", "label": "POSTRUN_SCRIPT", "properties": {"描述": "意义：模型运行后执行的脚本路径（后置处理）\n常见可用值：绝对路径，空值（无后置处理）"}}, {"id": "213", "label": "PRERUN_SCRIPT", "properties": {"描述": "意义：模型运行前执行的脚本路径（前置处理）\n常见可用值：绝对路径，空值（无前置处理）"}}, {"id": "214", "label": "ALLOCATE_SPARE_NODES", "properties": {"描述": "意义：控制是否分配备用节点（应对节点故障）\n常见可用值：TRUE, FALSE"}}, {"id": "215", "label": "ESMF_AWARE_THREADING", "properties": {"描述": "意义：控制是否启用 ESMF 感知的线程（优化线程 - MPI 兼容性）\n常见可用值：TRUE, FALSE"}}, {"id": "216", "label": "FORCE_SPARE_NODES", "properties": {"描述": "意义：强制分配的备用节点数（-999 表示不强制）\n常见可用值：-999（不强制）, 正整数（强制数量）"}}, {"id": "217", "label": "MULTI_DRIVER", "properties": {"描述": "意义：控制是否启用多驱动模式（多实例运行）\n常见可用值：TRUE, FALSE"}}, {"id": "218", "label": "NGPUS_PER_NODE", "properties": {"描述": "意义：每节点的 GPU 数量（0 表示不使用 GPU）\n常见可用值：0, 1, 2/...（GPU 数量）"}}, {"id": "219", "label": "NINST", "properties": {"描述": "意义：模型实例数量（单实例为 1）\n常见可用值：正整数"}}, {"id": "220", "label": "NTASKS", "properties": {"描述": "意义：各组件的 MPI 任务数（控制并行规模）\n常见可用值：['<COMP>:<NUM>']（组件 - 任务数列表）"}}, {"id": "221", "label": "NTASKS_PER_INST", "properties": {"描述": "意义：每个实例各组件的 MPI 任务数\n常见可用值：['<COMP>:<NUM>']（组件 - 任务数列表）"}}, {"id": "222", "label": "NTHRDS", "properties": {"描述": "意义：各组件的线程数（多线程并行配置）\n常见可用值：['<COMP>:<NUM>']（组件 - 线程数列表）"}}, {"id": "223", "label": "OVERSUBSCRIBE_GPU", "properties": {"描述": "意义：控制是否超分 GPU（多个任务共享一个 GPU）\n常见可用值：TRUE, FALSE"}}, {"id": "224", "label": "PSTRID", "properties": {"描述": "意义：各组件的任务 stride（用于负载均衡）\n常见可用值：['<COMP>:<NUM>']（组件 - stride 列表，通常为 1）"}}, {"id": "225", "label": "ROOTPE", "properties": {"描述": "意义：各组件的根任务 ID（MPI 任务编号起点）\n常见可用值：['<COMP>:<NUM>']（组件 - 根任务 ID 列表，通常为 0）"}}, {"id": "226", "label": "COSTPES_PER_NODE", "properties": {"描述": "意义：每节点的 “成本任务数”（用于资源计费）\n常见可用值：正整数"}}, {"id": "227", "label": "COST_PES", "properties": {"描述": "意义：总 “成本任务数”\n常见可用值：正整数"}}, {"id": "228", "label": "MAX_CPUTASKS_PER_GPU_NODE", "properties": {"描述": "意义：GPU 节点的最大 CPU 任务数（0 表示不使用 GPU 节点）\n常见可用值：0, 正整数"}}, {"id": "229", "label": "MAX_GPUS_PER_NODE", "properties": {"描述": "意义：每节点的最大 GPU 数（0 表示不支持 GPU）\n常见可用值：0, 正整数"}}, {"id": "230", "label": "MAX_MEM_PER_NODE", "properties": {"描述": "意义：每节点的最大内存（0 表示未限制）\n常见可用值：0, 数值 + 单位（如 128GB）"}}, {"id": "231", "label": "MAX_MPITASKS_PER_NODE", "properties": {"描述": "意义：每节点的最大 MPI 任务数（决定节点任务分配上限）\n常见可用值：正整数"}}, {"id": "232", "label": "MAX_TASKS_PER_NODE", "properties": {"描述": "意义：每节点的最大总任务数（含 MPI + 线程）\n常见可用值：正整数"}}, {"id": "233", "label": "MEM_PER_TASK", "properties": {"描述": "意义：每个任务的内存限制（0 表示未限制）\n常见可用值：0, 数值 + 单位（如 4GB）"}}, {"id": "234", "label": "TOTALPES", "properties": {"描述": "意义：模型的总 MPI 任务数\n常见可用值：正整数"}}, {"id": "235", "label": "HIST_DATE", "properties": {"描述": "意义：历史输出的指定日期（-999 表示不按日期输出）\n常见可用值：-999, 格式：YYYY-MM-DD"}}, {"id": "236", "label": "HIST_N", "properties": {"描述": "意义：历史输出的间隔步数（-999 表示不按步数输出）\n常见可用值：-999, 正整数"}}, {"id": "237", "label": "HIST_OPTION", "properties": {"描述": "意义：历史输出的触发方式\n常见可用值：never（不输出）, ndays（按天数）, date（按日期）"}}, {"id": "238", "label": "CONTINUE_RUN", "properties": {"描述": "意义：控制模型是否从断点继续运行（FALSE 表示全新启动）\n常见可用值：TRUE, FALSE"}}, {"id": "239", "label": "DRV_RESTART_POINTER", "properties": {"描述": "意义：驱动程序（耦合器）的重启文件指针（记录上次重启位置）\n常见可用值：文件名（如 rpointer.cpl.XXXX-XX-XX-XXXXXX）"}}, {"id": "240", "label": "ESP_RUN_ON_PAUSE", "properties": {"描述": "意义：控制 ESP 组件在模型暂停时是否继续运行\n常见可用值：TRUE, FALSE"}}, {"id": "241", "label": "GET_REFCASE", "properties": {"描述": "意义：控制是否从参考案例（refcase）获取初始数据\n常见可用值：TRUE, FALSE"}}, {"id": "242", "label": "JOB_IDS", "properties": {"描述": "意义：关联的批处理任务 ID 列表（多任务依赖用）\n常见可用值：任务 ID 列表，空值（无关联任务）"}}, {"id": "243", "label": "JOB_PRIORITY", "properties": {"描述": "意义：模型运行任务的优先级\n常见可用值：regular（普通）, high（高）, low（低）"}}, {"id": "244", "label": "MEDIATOR_READ_RESTART", "properties": {"描述": "意义：控制中介程序是否读取重启文件\n常见可用值：TRUE, FALSE"}}, {"id": "245", "label": "PAUSE_ACTIVE", "properties": {"描述": "意义：各组件的暂停状态（列表形式）\n常见可用值：['<COMP>:TRUE/<COMP>:FALSE']（组件暂停状态）"}}, {"id": "246", "label": "PAUSE_N", "properties": {"描述": "意义：模型暂停的间隔步数（0 表示不暂停）\n常见可用值：0, 正整数"}}, {"id": "247", "label": "PAUSE_OPTION", "properties": {"描述": "意义：模型暂停的触发方式\n常见可用值：never（不暂停）, ndays（按天数）, nsteps（按步数）"}}, {"id": "248", "label": "REST_DATE", "properties": {"描述": "意义：重启文件输出的指定日期（-999 表示不按日期）\n常见可用值：-999, 格式：YYYY-MM-DD"}}, {"id": "249", "label": "REST_N", "properties": {"描述": "意义：重启文件输出的间隔（配合 REST_OPTION）\n常见可用值：正整数（如 5 表示每 5 天输出一次）"}}, {"id": "250", "label": "REST_OPTION", "properties": {"描述": "意义：重启文件输出的触发方式\n常见可用值：ndays（按天数）, nmonths（按月数）, never（不输出）"}}, {"id": "251", "label": "RESUBMIT", "properties": {"描述": "意义：模型任务的自动重运行次数（0 表示不重运行）\n常见可用值：0, 正整数"}}, {"id": "252", "label": "RESUBMIT_SETS_CONTINUE_RUN", "properties": {"描述": "意义：控制重运行时是否自动设置 CONTINUE_RUN=TRUE（从上次断点继续）\n常见可用值：TRUE, FALSE"}}, {"id": "253", "label": "RUN_REFCASE", "properties": {"描述": "意义：参考案例名称（用于获取初始数据）\n常见可用值：案例名（如 case.std）"}}, {"id": "254", "label": "RUN_REFDATE", "properties": {"描述": "意义：参考案例的初始日期\n常见可用值：格式：YYYY-MM-DD"}}, {"id": "255", "label": "RUN_REFDIR", "properties": {"描述": "意义：参考案例数据的存放目录\n常见可用值：目录名（如 ccsm4_init）"}}, {"id": "256", "label": "RUN_REFTOD", "properties": {"描述": "意义：参考案例的初始时间（时分秒，格式：HHMMSS）\n常见可用值：6 位整数（如 000000 表示 0 点）"}}, {"id": "257", "label": "RUN_STARTDATE", "properties": {"描述": "意义：模型运行的起始日期\n常见可用值：格式：YYYY-MM-DD"}}, {"id": "258", "label": "RUN_TYPE", "properties": {"描述": "意义：模型运行类型（启动方式）\n常见可用值：startup（全新启动）, continue（继续运行）, branch（分支运行）"}}, {"id": "259", "label": "RUN_WITH_SUBMIT", "properties": {"描述": "意义：控制是否通过 submit 脚本提交运行任务\n常见可用值：TRUE, FALSE"}}, {"id": "260", "label": "START_TOD", "properties": {"描述": "意义：模型运行起始时间的时分秒（0 表示 0 点）\n常见可用值：整数（0-86399，单位：秒）"}}, {"id": "261", "label": "STOP_DATE", "properties": {"描述": "意义：模型停止的指定日期（-999 表示不按日期）\n常见可用值：-999, 格式：YYYY-MM-DD"}}, {"id": "262", "label": "STOP_N", "properties": {"描述": "意义：模型运行的时长（配合 STOP_OPTION，如 5 表示 5 天）\n常见可用值：正整数"}}, {"id": "263", "label": "STOP_OPTION", "properties": {"描述": "意义：模型停止的触发方式\n常见可用值：ndays（按天数）, nmonths（按月数）, date（按日期）"}}, {"id": "264", "label": "BUDGETS", "properties": {"描述": "意义：控制是否输出能量 / 物质平衡预算文件\n常见可用值：TRUE, FALSE"}}, {"id": "265", "label": "CCSM_CO2_PPMV", "properties": {"描述": "意义：模型运行的大气 CO₂浓度（单位：ppm）\n常见可用值：数值（如 284.7 为工业前浓度，415 为现代浓度）"}}, {"id": "266", "label": "CPL_ALBAV", "properties": {"描述": "意义：控制耦合器是否启用 ALBAV（大气 - 陆面平衡验证）模块\n常见可用值：TRUE, FALSE"}}, {"id": "267", "label": "CPL_EPBAL", "properties": {"描述": "意义：控制耦合器的能量平衡模式\n常见可用值：on（启用）, off（禁用）"}}, {"id": "268", "label": "CPL_USER_MODS", "properties": {"描述": "意义：耦合器的用户自定义修改文件路径\n常见可用值：绝对路径，空值（无修改）"}}, {"id": "269", "label": "LND_SETS_DUST_EMIS_DRV_FLDS", "properties": {"描述": "意义：控制陆面组件是否设置沙尘排放驱动场\n常见可用值：TRUE, FALSE"}}, {"id": "270", "label": "CLM_ACCELERATED_SPINUP", "properties": {"描述": "意义：控制 CLM 是否启用加速自旋 up（快速达到稳定状态）\n常见可用值：on（启用）, off（禁用）"}}, {"id": "271", "label": "CLM_BLDNML_OPTS", "properties": {"描述": "意义：CLM namelist 文件生成的额外选项（如 BGC 配置）\n常见可用值：-bgc sp（简单 BGC）, -bgc cn（碳氮循环）, 空值"}}, {"id": "272", "label": "CLM_CO2_TYPE", "properties": {"描述": "意义：CLM 的 CO₂浓度类型（固定 / 时变）\n常见可用值：constant（固定）, timeseries（时变）"}}, {"id": "273", "label": "CLM_CONFIGURATION", "properties": {"描述": "意义：CLM 的配置类型（标准 / 区域 / 单点）\n常见可用值：clm（标准）, clm 区域（regional）, clm 单点（site）"}}, {"id": "274", "label": "CLM_FORCE_COLDSTART", "properties": {"描述": "意义：强制 CLM 冷启动（忽略初始条件，从头开始）\n常见可用值：on（启用）, off（禁用）"}}, {"id": "275", "label": "CLM_NAMELIST_OPTS", "properties": {"描述": "意义：CLM namelist 的额外参数（覆盖默认值）\n常见可用值：键值对（如 maxrad=10），空值"}}, {"id": "276", "label": "CLM_NML_USE_CASE", "properties": {"描述": "意义：CLM 的预设用例（决定默认参数配置）\n常见可用值：1850_control（1850 控制实验）, hist_control（历史控制）"}}, {"id": "277", "label": "CLM_PHYSICS_VERSION", "properties": {"描述": "意义：CLM 使用的物理参数化方案版本\n常见可用值：clm5_0（CLM5.0）, clm4_5（CLM4.5）"}}, {"id": "278", "label": "CLM_STRUCTURE", "properties": {"描述": "意义：CLM 的结构类型（标准 / 简化）\n常见可用值：standard（标准）, simple（简化）"}}, {"id": "279", "label": "CLM_USER_MODS", "properties": {"描述": "意义：CLM 的用户自定义修改文件路径\n常见可用值：绝对路径，空值（无修改）"}}, {"id": "280", "label": "CLM_USRDAT_DIR", "properties": {"描述": "意义：CLM 用户自定义数据（如区域网格）的目录（UNSET 表示未使用）\n常见可用值：绝对路径，UNSET"}}, {"id": "281", "label": "CLM_USRDAT_NAME", "properties": {"描述": "意义：CLM 用户自定义数据的名称（UNSET 表示未使用）\n常见可用值：数据名，UNSET"}}, {"id": "282", "label": "LND_TUNING_MODE", "properties": {"描述": "意义：陆面组件的参数调优模式（匹配强迫数据）\n常见可用值：clm5_0_GSWP3v1（CLM5.0+GSWP3v1）, clm5_0_ERA5（CLM5.0+ERA5）"}}, {"id": "283", "label": "NEONSITE", "properties": {"描述": "意义：NEON（美国国家生态观测网）站点名称（单点模拟用）\n常见可用值：站点名（如 BART），空值（非单点）"}}, {"id": "284", "label": "NEONVERSION", "properties": {"描述": "意义：NEON 数据的版本号\n常见可用值：latest（最新）, 版本号（如 v2）"}}, {"id": "285", "label": "PLUMBER2SITE", "properties": {"描述": "意义：PLUMBER2（陆面模型比对项目）站点名称（单点模拟用）\n常见可用值：站点名，空值（非单点）"}}, {"id": "286", "label": "DATM_CO2_TSERIES", "properties": {"描述": "意义：DATM 的 CO₂浓度时变序列文件（none 表示使用固定值）\n常见可用值：文件名，none"}}, {"id": "287", "label": "DATM_CPLHIST_CASE", "properties": {"描述": "意义：DATM 耦合历史案例名称（用于耦合历史数据）\n常见可用值：案例名，UNSET（未使用）"}}, {"id": "288", "label": "DATM_CPLHIST_DIR", "properties": {"描述": "意义：DATM 耦合历史数据的目录\n常见可用值：绝对路径，UNSET（未使用）"}}, {"id": "289", "label": "DATM_CPLHIST_DOMAIN_FILE", "properties": {"描述": "意义：DATM 耦合历史数据的域文件（null 表示未使用）\n常见可用值：文件名，null"}}, {"id": "290", "label": "DATM_MODE", "properties": {"描述": "意义：DATM 的驱动模式（匹配强迫数据集）\n常见可用值：CLMGSWP3v1（CLM+GSWP3v1）, ERA5, NCEP2"}}, {"id": "291", "label": "DATM_PRESAERO", "properties": {"描述": "意义：DATM 的预设气溶胶数据集\n常见可用值：clim_1850（1850 气候态）, clim_hist（历史气候态）"}}, {"id": "292", "label": "DATM_PRESNDEP", "properties": {"描述": "意义：DATM 的预设非依赖参数数据集\n常见可用值：clim_1850, clim_hist"}}, {"id": "293", "label": "DATM_PRESO3", "properties": {"描述": "意义：DATM 的预设臭氧数据集\n常见可用值：clim_1850, clim_hist"}}, {"id": "294", "label": "DATM_SKIP_RESTART_READ", "properties": {"描述": "意义：控制 DATM 是否跳过读取重启文件（强制使用初始数据）\n常见可用值：TRUE, FALSE"}}, {"id": "295", "label": "DATM_TOPO", "properties": {"描述": "意义：DATM 的地形数据类型\n常见可用值：observed（观测地形）, climatology（气候态地形）"}}, {"id": "296", "label": "DATM_YR_ALIGN", "properties": {"描述": "意义：DATM 强迫数据的年份对齐方式（1 表示自然年对齐）\n常见可用值：正整数"}}, {"id": "297", "label": "DATM_YR_END", "properties": {"描述": "意义：DATM 强迫数据的结束年份\n常见可用值：正整数（需与数据集匹配）"}}, {"id": "298", "label": "DATM_YR_START", "properties": {"描述": "意义：DATM 强迫数据的起始年份\n常见可用值：正整数（需与数据集匹配）"}}, {"id": "299", "label": "DATM_YR_START_FILENAME", "properties": {"描述": "意义：DATM 强迫数据文件名中的起始年份（9999 表示自动匹配）\n常见可用值：9999, 正整数"}}, {"id": "300", "label": "MOSART_IGNORE_WARNINGS", "properties": {"描述": "意义：控制 MOSART 是否忽略警告信息（用于调试）\n常见可用值：TRUE, FALSE"}}, {"id": "301", "label": "MOSART_SIM_YEAR", "properties": {"描述": "意义：MOSART 的模拟基准年份（用于初始条件）\n常见可用值：正整数（如 1850, 2000）"}}, {"id": "302", "label": "ADD_AOFLUX_TO_RUNSEQ", "properties": {"描述": "意义：控制是否在运行序列中添加大气 - 海洋通量计算步骤\n常见可用值：TRUE, FALSE"}}, {"id": "303", "label": "ATM_NCPL", "properties": {"描述": "意义：大气组件与耦合器的通信频率（单位：次 / 天，48 = 每 30 分钟一次）\n常见可用值：正整数（如 24=1 次 / 天，48=2 次 / 天）"}}, {"id": "304", "label": "BRF_EMIS_OCN", "properties": {"描述": "意义：控制海洋组件是否输出生物源氟利昂排放\n常见可用值：TRUE, FALSE"}}, {"id": "305", "label": "CCSM_BGC", "properties": {"描述": "意义：控制是否启用 CESM 的生物地球化学耦合模式\n常见可用值：none（不启用）, bgc（启用）"}}, {"id": "306", "label": "COUPLING_MODE", "properties": {"描述": "意义：模型的耦合模式（CESM 默认模式）\n常见可用值：cesm, cpl（纯耦合器模式）"}}, {"id": "307", "label": "CPL_I2O_PER_CAT", "properties": {"描述": "意义：控制耦合器是否按类别（如海冰类型）处理冰 - 海通量\n常见可用值：TRUE, FALSE"}}, {"id": "308", "label": "CPL_SEQ_OPTION", "properties": {"描述": "意义：耦合器的序列选项（控制组件通信顺序）\n常见可用值：OPTION1, OPTION2（不同顺序策略）"}}, {"id": "309", "label": "DMS_EMIS_OCN", "properties": {"描述": "意义：控制海洋组件是否输出二甲基硫醚（DMS）排放\n常见可用值：TRUE, FALSE"}}, {"id": "310", "label": "GLC_AVG_PERIOD", "properties": {"描述": "意义：冰川组件的平均输出周期\n常见可用值：yearly（年平均）, monthly（月平均）, daily（日平均）"}}, {"id": "311", "label": "GLC_NCPL", "properties": {"描述": "意义：冰川组件与耦合器的通信频率\n常见可用值：正整数"}}, {"id": "312", "label": "ICE_NCPL", "properties": {"描述": "意义：海冰组件与耦合器的通信频率\n常见可用值：正整数"}}, {"id": "313", "label": "LND_NCPL", "properties": {"描述": "意义：陆面组件与耦合器的通信频率\n常见可用值：正整数（通常与 ATM_NCPL 一致）"}}, {"id": "314", "label": "N2O_EMIS_OCN", "properties": {"描述": "意义：控制海洋组件是否输出氧化亚氮（N₂O）排放\n常见可用值：TRUE, FALSE"}}, {"id": "315", "label": "NCPL_BASE_PERIOD", "properties": {"描述": "意义：耦合通信频率的基准周期\n常见可用值：day（天）, month（月）"}}, {"id": "316", "label": "NH3_EMIS_OCN", "properties": {"描述": "意义：控制海洋组件是否输出氨（NH₃）排放\n常见可用值：TRUE, FALSE"}}, {"id": "317", "label": "OCN_NCPL", "properties": {"描述": "意义：海洋组件与耦合器的通信频率\n常见可用值：正整数"}}, {"id": "318", "label": "ROF_NCPL", "properties": {"描述": "意义：水文路由组件与耦合器的通信频率\n常见可用值：正整数"}}, {"id": "319", "label": "WAV_NCPL", "properties": {"描述": "意义：波浪组件与耦合器的通信频率\n常见可用值：正整数"}}, {"id": "320", "label": "DOUT_S", "properties": {"描述": "意义：控制是否启用结果归档（将输出文件复制到 DOUT_S_ROOT）\n常见可用值：TRUE, FALSE"}}, {"id": "321", "label": "DOUT_S_SAVE_INTERIM_RESTART_FILES", "properties": {"描述": "意义：控制是否归档中间重启文件（非最终重启文件）\n常见可用值：TRUE, FALSE"}}, {"id": "322", "label": "SYSLOG_N", "properties": {"描述": "意义：系统日志的保留数量（超过则删除旧日志）\n常见可用值：正整数"}}, {"id": "323", "label": "CREATE_ESMF_PET_FILES", "properties": {"描述": "意义：控制是否生成 ESMF PET 文件（记录任务 - 节点映射，用于调试）\n常见可用值：TRUE, FALSE"}}, {"id": "324", "label": "CASESTR", "properties": {"描述": "意义：案例的描述字符串（UNSET 表示未设置）\n常见可用值：自定义字符串，UNSET"}}, {"id": "325", "label": "LOGDIR", "properties": {"描述": "意义：模型运行日志的存放目录\n常见可用值：绝对路径"}}, {"id": "326", "label": "RUNDIR", "properties": {"描述": "意义：模型运行时的工作目录（存放临时输出、重启文件）\n常见可用值：绝对路径（通常为 $CIME_OUTPUT_ROOT/<CASE>/run）"}}, {"id": "327", "label": "DIN_LOC_ROOT", "properties": {"描述": "意义：模型输入数据（强迫场、网格、初始条件）的根目录\n常见可用值：绝对路径"}}, {"id": "328", "label": "DIN_LOC_ROOT_CLMFORC", "properties": {"描述": "意义：CLM 强迫数据的根目录（补充 DIN_LOC_ROOT）\n常见可用值：绝对路径"}}, {"id": "329", "label": "DIN_STAGING_ROOT", "properties": {"描述": "意义：输入数据的临时存放目录（用于数据预加载）\n常见可用值：绝对路径，UNSET（不使用）"}}, {"id": "330", "label": "NODENAME_REGEX", "properties": {"描述": "意义：节点名称的正则表达式（用于节点筛选）\n常见可用值：正则表达式，UNSET（不筛选）"}}, {"id": "331", "label": "NODE_FAIL_REGEX", "properties": {"描述": "意义：节点故障的日志匹配正则表达式（用于故障检测）\n常见可用值：正则表达式，空值（不检测）"}}, {"id": "332", "label": "PROXY", "properties": {"描述": "意义：输入数据下载的代理服务器地址\n常见可用值：代理 URL，UNSET（不使用代理）"}}, {"id": "333", "label": "TEST", "properties": {"描述": "意义：控制是否启用测试模式（测试模式使用简化数据）\n常见可用值：TRUE, FALSE"}}, {"id": "334", "label": "ATM_DOMAIN_MESH", "properties": {"描述": "意义：大气组件的网格文件路径（ESMF 格式）\n常见可用值：绝对路径（含 $DIN_LOC_ROOT 变量）"}}, {"id": "335", "label": "EPS_AAREA", "properties": {"描述": "意义：大气网格面积的容差（用于网格验证）\n常见可用值：小数（如 9e-07）"}}, {"id": "336", "label": "EPS_AGRID", "properties": {"描述": "意义：大气网格坐标的容差\n常见可用值：小数（如 1e-12）"}}, {"id": "337", "label": "EPS_AMASK", "properties": {"描述": "意义：大气网格掩码的容差（用于区域筛选）\n常见可用值：小数（如 1e-13）"}}, {"id": "338", "label": "EPS_FRAC", "properties": {"描述": "意义：网格分数的容差（用于网格重叠计算）\n常见可用值：小数（如 1.0e-02）"}}, {"id": "339", "label": "EPS_OAREA", "properties": {"描述": "意义：海洋网格面积的容差\n常见可用值：小数（如 0.1）"}}, {"id": "340", "label": "EPS_OGRID", "properties": {"描述": "意义：海洋网格坐标的容差\n常见可用值：小数（如 0.01）"}}, {"id": "341", "label": "EPS_OMASK", "properties": {"描述": "意义：海洋网格掩码的容差\n常见可用值：小数（如 1e-06）"}}, {"id": "342", "label": "GLC_DOMAIN_MESH", "properties": {"描述": "意义：冰川组件的网格文件路径（UNSET 表示未启用）\n常见可用值：绝对路径，UNSET"}}, {"id": "343", "label": "ICE_DOMAIN_MESH", "properties": {"描述": "意义：海冰组件的网格文件路径（UNSET 表示未启用）\n常见可用值：绝对路径，UNSET"}}, {"id": "344", "label": "LND2ROF_FMAPNAME", "properties": {"描述": "意义：陆面到水文路由组件的网格映射文件名（unset 表示使用默认）\n常见可用值：文件名，unset"}}, {"id": "345", "label": "LND_DOMAIN_FILE", "properties": {"描述": "意义：陆面组件的域文件路径（UNSET 表示使用网格文件）\n常见可用值：绝对路径，UNSET"}}, {"id": "346", "label": "LND_DOMAIN_MESH", "properties": {"描述": "意义：陆面组件的网格文件路径（ESMF 格式）\n常见可用值：绝对路径（含 $DIN_LOC_ROOT 变量）"}}, {"id": "347", "label": "LND_DOMAIN_PATH", "properties": {"描述": "意义：陆面域文件的存放目录\n常见可用值：绝对路径（含 $DIN_LOC_ROOT 变量）"}}, {"id": "348", "label": "MASK_GRID", "properties": {"描述": "意义：掩码网格的文件路径（用于区域限制）\n常见可用值：绝对路径（含 $DIN_LOC_ROOT 变量）"}}, {"id": "349", "label": "OCN2WAV_SMAPNAME", "properties": {"描述": "意义：海洋到波浪组件的网格映射文件名（unset 表示使用默认）\n常见可用值：文件名，unset"}}, {"id": "350", "label": "OCN_DOMAIN_MESH", "properties": {"描述": "意义：海洋组件的网格文件路径（UNSET 表示未启用）\n常见可用值：绝对路径，UNSET"}}, {"id": "351", "label": "PTS_DOMAINFILE", "properties": {"描述": "意义：点模拟（单点）的域文件路径\n常见可用值：绝对路径（含 $DIN_LOC_ROOT 变量）"}}, {"id": "352", "label": "PTS_LAT", "properties": {"描述": "意义：点模拟的纬度（-999.99 表示非点模拟）\n常见可用值：-999.99, 纬度值（如 30.0）"}}, {"id": "353", "label": "PTS_LON", "properties": {"描述": "意义：点模拟的经度（-999.99 表示非点模拟）\n常见可用值：-999.99, 经度值（如 120.0）"}}, {"id": "354", "label": "ROF2LND_FMAPNAME", "properties": {"描述": "意义：水文路由到陆面组件的网格映射文件名（unset 表示使用默认）\n常见可用值：文件名，unset"}}, {"id": "355", "label": "ROF2OCN_ICE_RMAPNAME", "properties": {"描述": "意义：水文路由到海洋组件的冰通量网格映射文件名（unset 表示使用默认）\n常见可用值：文件名，unset"}}, {"id": "356", "label": "ROF2OCN_LIQ_RMAPNAME", "properties": {"描述": "意义：水文路由到海洋组件的液体通量网格映射文件名（unset 表示使用默认）\n常见可用值：文件名，unset"}}, {"id": "357", "label": "ROF_DOMAIN_MESH", "properties": {"描述": "意义：水文路由组件的网格文件路径（ESMF 格式）\n常见可用值：绝对路径（含 $DIN_LOC_ROOT 变量）"}}, {"id": "358", "label": "WAV2OCN_SMAPNAME", "properties": {"描述": "意义：波浪到海洋组件的网格映射文件名（unset 表示使用默认）\n常见可用值：文件名，unset"}}, {"id": "359", "label": "WAV_DOMAIN_MESH", "properties": {"描述": "意义：波浪组件的网格文件路径（UNSET 表示未启用）\n常见可用值：绝对路径，UNSET"}}, {"id": "360", "label": "DOUT_S_ROOT", "properties": {"描述": "意义：结果归档的根目录（DOUT_S=TRUE 时生效）\n常见可用值：绝对路径（通常为 $CIME_OUTPUT_ROOT/archive/<CASE>）"}}, {"id": "361", "label": "BFBFLAG", "properties": {"描述": "意义：控制是否启用 BFB（位对位）可重现性模式（确保相同输入得到相同输出）\n常见可用值：TRUE, FALSE"}}, {"id": "362", "label": "CHECK_TIMING", "properties": {"描述": "意义：控制是否检查模型运行时间（输出 timing 日志）\n常见可用值：TRUE, FALSE"}}, {"id": "363", "label": "COMP_RUN_BARRIERS", "properties": {"描述": "意义：控制各组件运行时是否启用屏障（barrier）同步\n常见可用值：TRUE, FALSE"}}, {"id": "364", "label": "ESMF_PROFILING_LEVEL", "properties": {"描述": "意义：ESMF 框架的性能分析级别（0 = 不分析，1 = 基础分析）\n常见可用值：0, 1, 2（级别越高，分析越详细）"}}, {"id": "365", "label": "ESMF_VERBOSITY_LEVEL", "properties": {"描述": "意义：ESMF 框架的日志详细程度\n常见可用值：off（无日志）, low（少量）, high（大量）"}}, {"id": "366", "label": "FLDS_WISO", "properties": {"描述": "意义：控制是否输出水同位素（H₂¹⁸O、HDO）相关变量\n常见可用值：TRUE, FALSE"}}, {"id": "367", "label": "INFO_DBUG", "properties": {"描述": "意义：模型调试信息的输出级别（数值越高，日志越详细）\n常见可用值：0（无调试信息）, 1-5（逐级增加详细度）"}}, {"id": "368", "label": "PROFILE_PAPI_ENABLE", "properties": {"描述": "意义：控制是否启用 PAPI（性能应用编程接口）进行硬件性能分析\n常见可用值：TRUE, FALSE"}}, {"id": "369", "label": "SAVE_TIMING", "properties": {"描述": "意义：控制是否保存模型运行的 timing（时间统计）日志文件\n常见可用值：TRUE, FALSE"}}, {"id": "370", "label": "TIMER_DETAIL", "properties": {"描述": "意义：计时器的详细程度（控制 timing 日志中记录的事件粒度）\n常见可用值：1（粗略）- 5（精细）"}}, {"id": "371", "label": "TIMER_LEVEL", "properties": {"描述": "意义：计时器的层级（控制 timing 日志中记录的组件范围）\n常见可用值：1（仅驱动）- 4（全组件）"}}, {"id": "372", "label": "TPROF_TOTAL", "properties": {"描述": "意义：总性能分析开关（0 表示关闭，1 表示开启全组件性能统计）\n常见可用值：0, 1"}}, {"id": "373", "label": "GLC_NEC", "properties": {"描述": "意义：冰川组件（SGLC）的有效网格单元数（用于简化冰川模拟）\n常见可用值：正整数"}}, {"id": "374", "label": "GLC_TWO_WAY_COUPLING", "properties": {"描述": "意义：控制冰川组件与其他组件（如大气、陆面）是否启用双向耦合\n常见可用值：TRUE, FALSE"}}, {"id": "375", "label": "MODEL_DOI_URL", "properties": {"描述": "意义：模型引用的 DOI（数字对象标识符）链接（用于学术引用）\n常见可用值：标准 DOI URL"}}, {"id": "376", "label": "MPI_RUN_COMMAND", "properties": {"描述": "意义：启动 MPI 并行任务的命令路径（空值 / UNSET 表示使用系统默认 mpirun）\n常见可用值：绝对路径（如 /usr/bin/mpirun）, UNSET, 空值"}}, {"id": "377", "label": "TFREEZE_SALTWATER_OPTION", "properties": {"描述": "意义：盐水冻结过程的参数化方案（控制海冰 / 海洋中盐水冻结的计算逻辑）\n常见可用值：mushy（糊状模型，主流方案）, explicit（显式方案）"}}, {"id": "378", "label": "PIO_ASYNCIO_NTASKS", "properties": {"描述": "意义：异步 I/O（PIO）的任务数（0 表示不启用异步 I/O）\n常见可用值：0, 正整数（需小于总 MPI 任务数）"}}, {"id": "379", "label": "PIO_ASYNCIO_ROOTPE", "properties": {"描述": "意义：异步 I/O 任务的根任务 ID（仅当 PIO_ASYNCIO_NTASKS>0 时生效）\n常见可用值：非负整数（需在 MPI 任务 ID 范围内）"}}, {"id": "380", "label": "PIO_ASYNCIO_STRIDE", "properties": {"描述": "意义：异步 I/O 任务的 stride（任务间隔，控制任务分配分散度）\n常见可用值：0（连续任务）, 正整数（间隔任务）"}}, {"id": "381", "label": "PIO_ASYNC_INTERFACE", "properties": {"描述": "意义：各组件的异步 I/O 接口启用状态（列表形式）\n常见可用值：['<COMP>:TRUE/<COMP>:FALSE']（组件异步 I/O 状态）"}}, {"id": "382", "label": "PIO_BLOCKSIZE", "properties": {"描述": "意义：PIO I/O 操作的块大小（-1 表示使用默认块大小）\n常见可用值：-1（默认）, 正整数（单位：字节）"}}, {"id": "383", "label": "PIO_BUFFER_SIZE_LIMIT", "properties": {"描述": "意义：PIO 缓冲区的大小限制（-1 表示无限制）\n常见可用值：-1（无限制）, 正整数（单位：字节）"}}, {"id": "384", "label": "PIO_DEBUG_LEVEL", "properties": {"描述": "意义：PIO 的调试信息输出级别（0 表示无调试信息）\n常见可用值：0-5（逐级增加详细度）"}}, {"id": "385", "label": "PIO_NETCDF_FORMAT", "properties": {"描述": "意义：各组件输出文件的 NetCDF 格式（64bit_data 表示 64 位数据存储）\n常见可用值：['<COMP>:64bit_data/<COMP>:32bit_data']（格式列表）"}}, {"id": "386", "label": "PIO_NUMTASKS", "properties": {"描述": "意义：各组件用于 PIO I/O 的任务数（-99 表示自动分配）\n常见可用值：['<COMP>:-99/<COMP>: 正整数 ']（任务数列表）"}}, {"id": "387", "label": "PIO_REARRANGER", "properties": {"描述": "意义：各组件 PIO 使用的数据重排器（1 = 串行，2 = 并行）\n常见可用值：['<COMP>:1/<COMP>:2']（重排器类型列表）"}}, {"id": "388", "label": "PIO_REARR_COMM_ENABLE_HS_COMP2IO", "properties": {"描述": "意义：控制是否启用组件到 I/O 的握手（handshake）通信（优化数据传输）\n常见可用值：TRUE, FALSE"}}, {"id": "389", "label": "PIO_REARR_COMM_ENABLE_HS_IO2COMP", "properties": {"描述": "意义：控制是否启用 I/O 到组件的握手通信\n常见可用值：TRUE, FALSE"}}, {"id": "390", "label": "PIO_REARR_COMM_ENABLE_ISEND_COMP2IO", "properties": {"描述": "意义：控制是否启用组件到 I/O 的非阻塞发送（isend）通信\n常见可用值：TRUE, FALSE"}}, {"id": "391", "label": "PIO_REARR_COMM_ENABLE_ISEND_IO2COMP", "properties": {"描述": "意义：控制是否启用 I/O 到组件的非阻塞发送通信\n常见可用值：TRUE, FALSE"}}, {"id": "392", "label": "PIO_REARR_COMM_FCD", "properties": {"描述": "意义：PIO 重排通信的故障检测模式（2denable 表示启用二维故障检测）\n常见可用值：2denable, 1denable, disable"}}, {"id": "393", "label": "PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO", "properties": {"描述": "意义：组件到 I/O 的最大挂起通信请求数（-2 表示自动计算）\n常见可用值：-2（自动）, 正整数"}}, {"id": "394", "label": "PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP", "properties": {"描述": "意义：I/O 到组件的最大挂起通信请求数\n常见可用值：正整数"}}, {"id": "395", "label": "PIO_REARR_COMM_TYPE", "properties": {"描述": "意义：PIO 重排通信的类型（p2p = 点对点通信，collective = 集合通信）\n常见可用值：p2p, collective"}}, {"id": "396", "label": "PIO_ROOT", "properties": {"描述": "意义：各组件 PIO I/O 的根任务 ID（负责汇总 / 分发 I/O 数据）\n常见可用值：['<COMP>: 非负整数 ']（根任务 ID 列表）"}}, {"id": "397", "label": "PIO_STRIDE", "properties": {"描述": "意义：各组件 PIO I/O 任务的 stride（基于每节点最大 MPI 任务数）\n常见可用值：['<COMP>:$MAX_MPITASKS_PER_NODE/<COMP>: 正整数 ']（stride 列表）"}}, {"id": "398", "label": "PIO_TYPENAME", "properties": {"描述": "意义：各组件 PIO 使用的文件类型（netcdf 表示 NetCDF 格式）\n常见可用值：['<COMP>:netcdf/<COMP>:hdf5']（文件类型列表）"}}], "links": [{"source": "0", "target": "1", "relation": "负责构建 CLM 组件"}, {"source": "0", "target": "2", "relation": "负责构建 CTSM 组件"}, {"source": "0", "target": "3", "relation": "负责构建 MOSART 组件"}, {"source": "0", "target": "4", "relation": "控制编译过程"}, {"source": "0", "target": "5", "relation": "派生配置和结果"}, {"source": "0", "target": "6", "relation": "控制网格划分"}, {"source": "0", "target": "7", "relation": "处理宏定义"}, {"source": "0", "target": "8", "relation": "记录构建状态"}, {"source": "0", "target": "9", "relation": "管理模型运行过程"}, {"source": "0", "target": "10", "relation": "归档任务管理"}, {"source": "0", "target": "11", "relation": "定义组件类型"}, {"source": "0", "target": "12", "relation": "配置组件的根目录"}, {"source": "0", "target": "13", "relation": "设置案例配置"}, {"source": "0", "target": "14", "relation": "管理派生文件和工具"}, {"source": "0", "target": "15", "relation": "设置案例描述"}, {"source": "0", "target": "16", "relation": "配置 Git 仓库"}, {"source": "0", "target": "17", "relation": "记录上次案例状态"}, {"source": "0", "target": "18", "relation": "配置批处理系统"}, {"source": "0", "target": "19", "relation": "数据模型配置"}, {"source": "0", "target": "20", "relation": "外部工具配置"}, {"source": "0", "target": "21", "relation": "设置处理单元"}, {"source": "0", "target": "22", "relation": "记录处理单元配置"}, {"source": "0", "target": "23", "relation": "管理历史数据"}, {"source": "0", "target": "24", "relation": "控制模型的启动、停止和重启"}, {"source": "0", "target": "25", "relation": "输出预算文件"}, {"source": "0", "target": "26", "relation": "设置 CO₂ 浓度"}, {"source": "0", "target": "27", "relation": "控制耦合器组件的运行"}, {"source": "0", "target": "28", "relation": "运行 CTSM 组件"}, {"source": "0", "target": "29", "relation": "运行 DATM 组件"}, {"source": "0", "target": "30", "relation": "运行 MOSART 组件"}, {"source": "0", "target": "31", "relation": "控制组件间耦合"}, {"source": "0", "target": "32", "relation": "管理结果归档"}, {"source": "0", "target": "33", "relation": "启用调试模式"}, {"source": "0", "target": "34", "relation": "记录模型运行描述"}, {"source": "0", "target": "35", "relation": "配置输入数据"}, {"source": "0", "target": "36", "relation": "配置模型的空间域"}, {"source": "0", "target": "37", "relation": "配置模型的输出"}, {"source": "0", "target": "38", "relation": "启用运行标志"}, {"source": "0", "target": "39", "relation": "控制冰川组件的运行"}, {"source": "0", "target": "40", "relation": "记录模型元数据"}, {"source": "0", "target": "41", "relation": "配置 MPI 并行计算"}, {"source": "0", "target": "42", "relation": "配置物理过程模型"}, {"source": "0", "target": "43", "relation": "配置 PIO I/O 操作"}, {"source": "1", "target": "44", "relation": "控制是否启用 PETSC 库"}, {"source": "2", "target": "45", "relation": "控制是否启用 LILAC 模块"}, {"source": "3", "target": "46", "relation": "控制洪水模拟模式"}, {"source": "3", "target": "47", "relation": "控制 MOSART 运行状态"}, {"source": "4", "target": "48", "relation": "控制多线程支持"}, {"source": "4", "target": "49", "relation": "指定模型日历类型"}, {"source": "4", "target": "50", "relation": "设置 CIME 输出根目录"}, {"source": "4", "target": "51", "relation": "设置组件间通信接口标准"}, {"source": "4", "target": "52", "relation": "控制调试模式启用与否"}, {"source": "4", "target": "53", "relation": "设置编译结果存放目录"}, {"source": "4", "target": "54", "relation": "强制编译 SMP 版本"}, {"source": "4", "target": "55", "relation": "指定 make 工具路径"}, {"source": "4", "target": "56", "relation": "设置并行任务数"}, {"source": "4", "target": "57", "relation": "指定 GPU 类型"}, {"source": "4", "target": "58", "relation": "控制 KOKKOS GPU 卸载"}, {"source": "4", "target": "59", "relation": "GPU MPI 包装脚本路径"}, {"source": "4", "target": "60", "relation": "启用 OPENACC GPU 卸载"}, {"source": "4", "target": "61", "relation": "启用 OPENMP GPU 卸载"}, {"source": "4", "target": "62", "relation": "设置模型负责人标识"}, {"source": "4", "target": "63", "relation": "控制是否使用 ALBANY 库"}, {"source": "4", "target": "64", "relation": "控制是否使用 ESMF 库"}, {"source": "4", "target": "65", "relation": "控制是否使用 MOAB 库"}, {"source": "4", "target": "66", "relation": "控制是否使用 PETSC 库"}, {"source": "4", "target": "67", "relation": "控制是否使用 TRILINOS 库"}, {"source": "5", "target": "68", "relation": "头文件存放目录"}, {"source": "5", "target": "69", "relation": "库文件存放目录"}, {"source": "5", "target": "70", "relation": "目标文件存放目录"}, {"source": "5", "target": "71", "relation": "Perl5 库搜索路径"}, {"source": "5", "target": "72", "relation": "共享库文件存放目录"}, {"source": "6", "target": "73", "relation": "设置大气组件网格分辨率"}, {"source": "6", "target": "74", "relation": "设置大气网格经向格点数"}, {"source": "6", "target": "75", "relation": "设置大气网格纬向格点数"}, {"source": "6", "target": "76", "relation": "设置冰川组件网格分辨率"}, {"source": "6", "target": "77", "relation": "设置冰川网格经向格点数"}, {"source": "6", "target": "78", "relation": "设置冰川网格纬向格点数"}, {"source": "6", "target": "79", "relation": "整体网格标识"}, {"source": "6", "target": "80", "relation": "设置海冰组件网格分辨率"}, {"source": "6", "target": "81", "relation": "设置海冰组件类别数"}, {"source": "6", "target": "82", "relation": "设置海冰网格经向格点数"}, {"source": "6", "target": "83", "relation": "设置海冰网格纬向格点数"}, {"source": "6", "target": "84", "relation": "设置陆面组件网格分辨率"}, {"source": "6", "target": "85", "relation": "设置陆面网格经向格点数"}, {"source": "6", "target": "86", "relation": "设置陆面网格纬向格点数"}, {"source": "6", "target": "87", "relation": "设置网格掩码分辨率"}, {"source": "6", "target": "88", "relation": "设置海洋组件网格分辨率"}, {"source": "6", "target": "89", "relation": "设置海洋网格经向格点数"}, {"source": "6", "target": "90", "relation": "设置海洋网格纬向格点数"}, {"source": "6", "target": "91", "relation": "设置水文路由组件网格分辨率"}, {"source": "6", "target": "92", "relation": "设置水文路由网格经向格点数"}, {"source": "6", "target": "93", "relation": "设置水文路由网格纬向格点数"}, {"source": "6", "target": "94", "relation": "设置波浪组件网格分辨率"}, {"source": "6", "target": "95", "relation": "设置波浪网格经向格点数"}, {"source": "6", "target": "96", "relation": "设置波浪网格纬向格点数"}, {"source": "7", "target": "97", "relation": "设置编译器"}, {"source": "7", "target": "98", "relation": "设置 MPI 库"}, {"source": "7", "target": "99", "relation": "设置操作系统类型"}, {"source": "7", "target": "100", "relation": "设置 PIO 配置选项"}, {"source": "7", "target": "101", "relation": "设置 PIO 库版本"}, {"source": "8", "target": "102", "relation": "标识编译是否完成"}, {"source": "8", "target": "103", "relation": "编译状态码"}, {"source": "8", "target": "104", "relation": "编译实例数量"}, {"source": "8", "target": "105", "relation": "实例标识"}, {"source": "8", "target": "106", "relation": "标识 SMP 编译"}, {"source": "8", "target": "107", "relation": "SMP 实例标识"}, {"source": "9", "target": "108", "relation": "批处理命令额外参数"}, {"source": "9", "target": "109", "relation": "批处理任务计费账户"}, {"source": "9", "target": "110", "relation": "提交的批处理队列"}, {"source": "9", "target": "111", "relation": "墙钟时间限制"}, {"source": "9", "target": "112", "relation": "项目标识"}, {"source": "9", "target": "113", "relation": "是否强制指定项目"}, {"source": "9", "target": "114", "relation": "用户指定的批处理队列"}, {"source": "9", "target": "115", "relation": "用户指定的墙钟时间"}, {"source": "9", "target": "116", "relation": "任务前置条件"}, {"source": "9", "target": "117", "relation": "批处理脚本模板"}, {"source": "10", "target": "118", "relation": "归档任务的批处理命令参数"}, {"source": "10", "target": "119", "relation": "归档任务计费账户"}, {"source": "10", "target": "120", "relation": "归档任务批处理队列"}, {"source": "10", "target": "121", "relation": "归档任务墙钟时间限制"}, {"source": "10", "target": "122", "relation": "归档任务项目标识"}, {"source": "10", "target": "123", "relation": "是否强制指定项目"}, {"source": "10", "target": "124", "relation": "用户指定的归档队列"}, {"source": "10", "target": "125", "relation": "用户指定的归档墙钟时间"}, {"source": "10", "target": "126", "relation": "归档任务依赖任务"}, {"source": "10", "target": "127", "relation": "归档任务前置条件"}, {"source": "10", "target": "128", "relation": "归档任务数量"}, {"source": "10", "target": "129", "relation": "每节点的归档任务数"}, {"source": "10", "target": "130", "relation": "归档任务批处理脚本模板"}, {"source": "10", "target": "131", "relation": "归档任务墙钟时间限制"}, {"source": "11", "target": "132", "relation": "大气组件类型"}, {"source": "11", "target": "133", "relation": "组件类别列表"}, {"source": "11", "target": "134", "relation": "耦合器组件类型"}, {"source": "11", "target": "135", "relation": "地球系统预测组件类型"}, {"source": "11", "target": "136", "relation": "冰川组件类型"}, {"source": "11", "target": "137", "relation": "海冰组件类型"}, {"source": "11", "target": "138", "relation": "陆面组件类型"}, {"source": "11", "target": "139", "relation": "海洋组件类型"}, {"source": "11", "target": "140", "relation": "水文路由组件类型"}, {"source": "11", "target": "141", "relation": "波浪组件类型"}, {"source": "11", "target": "142", "relation": "容器环境配置"}, {"source": "12", "target": "143", "relation": "大气组件根目录"}, {"source": "12", "target": "144", "relation": "耦合器组件根目录"}, {"source": "12", "target": "145", "relation": "ESP 组件根目录"}, {"source": "12", "target": "146", "relation": "冰川组件根目录"}, {"source": "12", "target": "147", "relation": "IAC 组件根目录"}, {"source": "12", "target": "148", "relation": "海冰组件根目录"}, {"source": "12", "target": "149", "relation": "陆面组件根目录"}, {"source": "12", "target": "150", "relation": "海洋组件根目录"}, {"source": "12", "target": "151", "relation": "水文路由组件根目录"}, {"source": "12", "target": "152", "relation": "波浪组件根目录"}, {"source": "13", "target": "153", "relation": "案例名称"}, {"source": "13", "target": "154", "relation": "案例配置文件存放目录"}, {"source": "13", "target": "155", "relation": "CIME 框架根目录"}, {"source": "13", "target": "156", "relation": "额外机器配置目录"}, {"source": "13", "target": "157", "relation": "文件配置规范路径"}, {"source": "13", "target": "158", "relation": "运行机器名称"}, {"source": "13", "target": "159", "relation": "机器配置文件目录"}, {"source": "13", "target": "160", "relation": "控制是否跨机器访问"}, {"source": "13", "target": "161", "relation": "CTSM 模型源代码根目录"}, {"source": "13", "target": "162", "relation": "案例配置的负责人标识"}, {"source": "14", "target": "163", "relation": "案例编译配置文件目录"}, {"source": "14", "target": "164", "relation": "案例文件头配置路径"}, {"source": "14", "target": "165", "relation": "专用工具脚本目录"}, {"source": "14", "target": "166", "relation": "模型框架名称"}, {"source": "14", "target": "167", "relation": "模型版本号"}, {"source": "14", "target": "168", "relation": "CIME 脚本根目录"}, {"source": "14", "target": "169", "relation": "工具脚本根目录"}, {"source": "15", "target": "170", "relation": "案例配置哈希值"}, {"source": "15", "target": "171", "relation": "创建用户"}, {"source": "15", "target": "172", "relation": "运行用户"}, {"source": "16", "target": "173", "relation": "Git 仓库地址"}, {"source": "17", "target": "174", "relation": "归档配置规范路径"}, {"source": "17", "target": "175", "relation": "批处理配置规范路径"}, {"source": "17", "target": "176", "relation": "编译库配置文件路径"}, {"source": "17", "target": "177", "relation": "CMAKE 宏文件目录"}, {"source": "17", "target": "178", "relation": "编译器配置规范路径"}, {"source": "17", "target": "179", "relation": "组件集合配置"}, {"source": "17", "target": "180", "relation": "组件集合配置文件路径"}, {"source": "17", "target": "181", "relation": "大气组件配置文件路径"}, {"source": "17", "target": "182", "relation": "耦合器组件配置文件路径"}, {"source": "17", "target": "183", "relation": "耦合器模型配置文件路径"}, {"source": "17", "target": "184", "relation": "ESP 组件配置文件路径"}, {"source": "17", "target": "185", "relation": "冰川组件配置文件路径"}, {"source": "17", "target": "186", "relation": "IAC 组件配置文件路径"}, {"source": "17", "target": "187", "relation": "海冰组件配置文件路径"}, {"source": "17", "target": "188", "relation": "陆面组件配置文件路径"}, {"source": "17", "target": "189", "relation": "海洋组件配置文件路径"}, {"source": "17", "target": "190", "relation": "水文路由组件配置文件路径"}, {"source": "17", "target": "191", "relation": "波浪组件配置文件路径"}, {"source": "17", "target": "192", "relation": "网格配置规范路径"}, {"source": "17", "target": "193", "relation": "输入数据配置规范路径"}, {"source": "17", "target": "194", "relation": "机器配置规范路径"}, {"source": "17", "target": "195", "relation": "namelist 定义文件路径"}, {"source": "17", "target": "196", "relation": "PES 配置规范路径"}, {"source": "17", "target": "197", "relation": "PIO 配置规范路径"}, {"source": "17", "target": "198", "relation": "测试修改文件目录"}, {"source": "17", "target": "199", "relation": "测试用例配置规范路径"}, {"source": "17", "target": "200", "relation": "用户自定义修改文件目录"}, {"source": "17", "target": "201", "relation": "工作流配置规范文件路径"}, {"source": "18", "target": "202", "relation": "批处理系统类型"}, {"source": "18", "target": "203", "relation": "模块命令路径"}, {"source": "18", "target": "204", "relation": "模块初始化脚本路径"}, {"source": "18", "target": "205", "relation": "模块管理系统类型"}, {"source": "18", "target": "206", "relation": "mpirun 命令路径"}, {"source": "19", "target": "207", "relation": "强制输出数据模型预报变量"}, {"source": "20", "target": "208", "relation": "数据同化启用状态"}, {"source": "20", "target": "209", "relation": "数据同化循环次数"}, {"source": "20", "target": "210", "relation": "数据同化脚本路径"}, {"source": "20", "target": "211", "relation": "使用外部工作流"}, {"source": "20", "target": "212", "relation": "运行后执行脚本路径"}, {"source": "20", "target": "213", "relation": "运行前执行脚本路径"}, {"source": "21", "target": "214", "relation": "控制是否分配备用节点"}, {"source": "21", "target": "215", "relation": "启用 ESMF 感知线程"}, {"source": "21", "target": "216", "relation": "强制分配备用节点数"}, {"source": "21", "target": "217", "relation": "启用多驱动模式"}, {"source": "21", "target": "218", "relation": "每节点 GPU 数量"}, {"source": "21", "target": "219", "relation": "模型实例数量"}, {"source": "21", "target": "220", "relation": "各组件的 MPI 任务数"}, {"source": "21", "target": "221", "relation": "每个实例的任务数"}, {"source": "21", "target": "222", "relation": "各组件的线程数"}, {"source": "21", "target": "223", "relation": "是否超分配 GPU"}, {"source": "21", "target": "224", "relation": "任务 stride"}, {"source": "21", "target": "225", "relation": "根任务 ID"}, {"source": "22", "target": "226", "relation": "每节点成本任务数"}, {"source": "22", "target": "227", "relation": "总成本任务数"}, {"source": "22", "target": "228", "relation": "每 GPU 节点的最大 CPU 任务数"}, {"source": "22", "target": "229", "relation": "每节点最大 GPU 数量"}, {"source": "22", "target": "230", "relation": "每节点最大内存"}, {"source": "22", "target": "231", "relation": "每节点最大 MPI 任务数"}, {"source": "22", "target": "232", "relation": "每节点最大总任务数"}, {"source": "22", "target": "233", "relation": "每任务内存限制"}, {"source": "22", "target": "234", "relation": "总 MPI 任务数"}, {"source": "23", "target": "235", "relation": "历史输出指定日期"}, {"source": "23", "target": "236", "relation": "历史输出步数间隔"}, {"source": "23", "target": "237", "relation": "历史输出触发方式"}, {"source": "24", "target": "238", "relation": "控制是否继续运行"}, {"source": "24", "target": "239", "relation": "驱动程序重启文件指针"}, {"source": "24", "target": "240", "relation": "ESP 组件在暂停时是否继续运行"}, {"source": "24", "target": "241", "relation": "从参考案例获取数据"}, {"source": "24", "target": "242", "relation": "任务 ID 列表"}, {"source": "24", "target": "243", "relation": "任务优先级"}, {"source": "24", "target": "244", "relation": "中介程序是否读取重启文件"}, {"source": "24", "target": "245", "relation": "各组件暂停状态"}, {"source": "24", "target": "246", "relation": "模型暂停步数间隔"}, {"source": "24", "target": "247", "relation": "模型暂停触发方式"}, {"source": "24", "target": "248", "relation": "重启文件指定日期"}, {"source": "24", "target": "249", "relation": "重启文件步数间隔"}, {"source": "24", "target": "250", "relation": "重启文件触发方式"}, {"source": "24", "target": "251", "relation": "自动重运行次数"}, {"source": "24", "target": "252", "relation": "重运行时是否继续运行"}, {"source": "24", "target": "253", "relation": "参考案例名称"}, {"source": "24", "target": "254", "relation": "参考案例初始日期"}, {"source": "24", "target": "255", "relation": "参考案例数据目录"}, {"source": "24", "target": "256", "relation": "参考案例初始时间"}, {"source": "24", "target": "257", "relation": "模型运行起始日期"}, {"source": "24", "target": "258", "relation": "模型运行类型"}, {"source": "24", "target": "259", "relation": "是否通过 submit 提交任务"}, {"source": "24", "target": "260", "relation": "模型运行起始时间"}, {"source": "24", "target": "261", "relation": "模型停止日期"}, {"source": "24", "target": "262", "relation": "模型运行时长"}, {"source": "24", "target": "263", "relation": "模型停止触发方式"}, {"source": "25", "target": "264", "relation": "控制是否输出平衡预算文件"}, {"source": "26", "target": "265", "relation": "设置 CO₂ 浓度"}, {"source": "27", "target": "266", "relation": "启用大气-陆面平衡验证模块"}, {"source": "27", "target": "267", "relation": "启用能量平衡模式"}, {"source": "27", "target": "268", "relation": "用户自定义修改路径"}, {"source": "27", "target": "269", "relation": "设置沙尘排放驱动场"}, {"source": "28", "target": "270", "relation": "启用 CLM 加速自旋 up"}, {"source": "28", "target": "271", "relation": "CLM namelist 额外选项"}, {"source": "28", "target": "272", "relation": "设置 CLM CO₂ 类型"}, {"source": "28", "target": "273", "relation": "设置 CLM 配置类型"}, {"source": "28", "target": "274", "relation": "强制 CLM 冷启动"}, {"source": "28", "target": "275", "relation": "CLM namelist 额外参数"}, {"source": "28", "target": "276", "relation": "CLM 预设用例"}, {"source": "28", "target": "277", "relation": "设置 CLM 物理参数化版本"}, {"source": "28", "target": "278", "relation": "设置 CLM 结构类型"}, {"source": "28", "target": "279", "relation": "CLM 用户自定义修改路径"}, {"source": "28", "target": "280", "relation": "CLM 用户自定义数据目录"}, {"source": "28", "target": "281", "relation": "CLM 用户自定义数据名称"}, {"source": "28", "target": "282", "relation": "陆面组件参数调优模式"}, {"source": "28", "target": "283", "relation": "设置 NEON 站点"}, {"source": "28", "target": "284", "relation": "设置 NEON 数据版本"}, {"source": "28", "target": "285", "relation": "设置 PLUMBER2 站点"}, {"source": "29", "target": "286", "relation": "设置 CO₂ 时变序列文件"}, {"source": "29", "target": "287", "relation": "设置耦合历史案例名称"}, {"source": "29", "target": "288", "relation": "设置耦合历史数据目录"}, {"source": "29", "target": "289", "relation": "设置耦合历史数据域文件"}, {"source": "29", "target": "290", "relation": "设置驱动模式"}, {"source": "29", "target": "291", "relation": "设置气溶胶数据集"}, {"source": "29", "target": "292", "relation": "设置非依赖参数数据集"}, {"source": "29", "target": "293", "relation": "设置臭氧数据集"}, {"source": "29", "target": "294", "relation": "跳过重启文件读取"}, {"source": "29", "target": "295", "relation": "设置地形数据类型"}, {"source": "29", "target": "296", "relation": "设置年份对齐方式"}, {"source": "29", "target": "297", "relation": "设置结束年份"}, {"source": "29", "target": "298", "relation": "设置起始年份"}, {"source": "29", "target": "299", "relation": "设置起始年份文件名"}, {"source": "30", "target": "300", "relation": "是否忽略警告信息"}, {"source": "30", "target": "301", "relation": "设置模拟基准年份"}, {"source": "31", "target": "302", "relation": "添加大气-海洋通量计算步骤"}, {"source": "31", "target": "303", "relation": "大气与耦合器通信频率"}, {"source": "31", "target": "304", "relation": "控制海洋组件输出氟利昂排放"}, {"source": "31", "target": "305", "relation": "启用生物地球化学耦合模式"}, {"source": "31", "target": "306", "relation": "设置耦合模式"}, {"source": "31", "target": "307", "relation": "处理冰-海通量按类别耦合"}, {"source": "31", "target": "308", "relation": "设置耦合器序列选项"}, {"source": "31", "target": "309", "relation": "控制海洋组件输出 DMS 排放"}, {"source": "31", "target": "310", "relation": "设置冰川组件平均输出周期"}, {"source": "31", "target": "311", "relation": "设置冰川与耦合器通信频率"}, {"source": "31", "target": "312", "relation": "设置海冰与耦合器通信频率"}, {"source": "31", "target": "313", "relation": "设置陆面与耦合器通信频率"}, {"source": "31", "target": "314", "relation": "控制海洋组件输出氧化亚氮排放"}, {"source": "31", "target": "315", "relation": "设置耦合通信频率基准周期"}, {"source": "31", "target": "316", "relation": "控制海洋组件输出氨排放"}, {"source": "31", "target": "317", "relation": "设置海洋与耦合器通信频率"}, {"source": "31", "target": "318", "relation": "设置水文路由与耦合器通信频率"}, {"source": "31", "target": "319", "relation": "设置波浪与耦合器通信频率"}, {"source": "32", "target": "320", "relation": "启用结果归档"}, {"source": "32", "target": "321", "relation": "归档中间重启文件"}, {"source": "32", "target": "322", "relation": "设置日志保留数量"}, {"source": "33", "target": "323", "relation": "生成 ESMF PET 文件"}, {"source": "34", "target": "324", "relation": "设置案例描述字符串"}, {"source": "34", "target": "325", "relation": "设置日志目录"}, {"source": "34", "target": "326", "relation": "设置工作目录"}, {"source": "35", "target": "327", "relation": "设置输入数据根目录"}, {"source": "35", "target": "328", "relation": "设置 CLM 强迫数据根目录"}, {"source": "35", "target": "329", "relation": "设置输入数据临时存放目录"}, {"source": "35", "target": "330", "relation": "设置节点名称正则表达式"}, {"source": "35", "target": "331", "relation": "设置节点故障日志匹配正则表达式"}, {"source": "35", "target": "332", "relation": "设置代理服务器地址"}, {"source": "35", "target": "333", "relation": "启用测试模式"}, {"source": "36", "target": "334", "relation": "大气网格文件路径"}, {"source": "36", "target": "335", "relation": "大气网格面积容差"}, {"source": "36", "target": "336", "relation": "大气网格坐标容差"}, {"source": "36", "target": "337", "relation": "大气网格掩码容差"}, {"source": "36", "target": "338", "relation": "网格分数容差"}, {"source": "36", "target": "339", "relation": "海洋网格面积容差"}, {"source": "36", "target": "340", "relation": "海洋网格坐标容差"}, {"source": "36", "target": "341", "relation": "海洋网格掩码容差"}, {"source": "36", "target": "342", "relation": "冰川网格文件路径"}, {"source": "36", "target": "343", "relation": "海冰网格文件路径"}, {"source": "36", "target": "344", "relation": "陆面到水文路由网格映射文件"}, {"source": "36", "target": "345", "relation": "陆面域文件路径"}, {"source": "36", "target": "346", "relation": "陆面网格文件路径"}, {"source": "36", "target": "347", "relation": "陆面域文件存放目录"}, {"source": "36", "target": "348", "relation": "掩码网格文件路径"}, {"source": "36", "target": "349", "relation": "海洋到波浪网格映射文件"}, {"source": "36", "target": "350", "relation": "海洋网格文件路径"}, {"source": "36", "target": "351", "relation": "点模拟域文件路径"}, {"source": "36", "target": "352", "relation": "点模拟纬度"}, {"source": "36", "target": "353", "relation": "点模拟经度"}, {"source": "36", "target": "354", "relation": "水文路由到陆面网格映射文件"}, {"source": "36", "target": "355", "relation": "水文路由到海洋冰通量网格映射"}, {"source": "36", "target": "356", "relation": "水文路由到海洋液体通量网格映射"}, {"source": "36", "target": "357", "relation": "水文路由网格文件路径"}, {"source": "36", "target": "358", "relation": "波浪到海洋网格映射文件"}, {"source": "36", "target": "359", "relation": "波浪网格文件路径"}, {"source": "37", "target": "360", "relation": "结果归档根目录"}, {"source": "38", "target": "361", "relation": "启用 BFB 可重现性模式"}, {"source": "38", "target": "362", "relation": "检查模型运行时间"}, {"source": "38", "target": "363", "relation": "启用组件同步屏障"}, {"source": "38", "target": "364", "relation": "设置性能分析级别"}, {"source": "38", "target": "365", "relation": "设置日志详细程度"}, {"source": "38", "target": "366", "relation": "输出水同位素相关变量"}, {"source": "38", "target": "367", "relation": "设置调试信息输出级别"}, {"source": "38", "target": "368", "relation": "启用 PAPI 性能分析"}, {"source": "38", "target": "369", "relation": "保存时间统计日志文件"}, {"source": "38", "target": "370", "relation": "计时器详细程度"}, {"source": "38", "target": "371", "relation": "计时器层级"}, {"source": "38", "target": "372", "relation": "启用全组件性能统计"}, {"source": "39", "target": "373", "relation": "设置有效网格单元数"}, {"source": "39", "target": "374", "relation": "启用冰川双向耦合"}, {"source": "40", "target": "375", "relation": "设置模型 DOI 链接"}, {"source": "41", "target": "376", "relation": "启动 MPI 命令路径"}, {"source": "42", "target": "377", "relation": "盐水冻结过程参数化方案"}, {"source": "43", "target": "378", "relation": "设置异步 I/O 任务数"}, {"source": "43", "target": "379", "relation": "设置根任务 ID"}, {"source": "43", "target": "380", "relation": "设置任务 stride"}, {"source": "43", "target": "381", "relation": "启用异步 I/O 接口"}, {"source": "43", "target": "382", "relation": "设置 I/O 块大小"}, {"source": "43", "target": "383", "relation": "设置缓冲区大小限制"}, {"source": "43", "target": "384", "relation": "设置调试级别"}, {"source": "43", "target": "385", "relation": "设置文件输出格式"}, {"source": "43", "target": "386", "relation": "设置任务数"}, {"source": "43", "target": "387", "relation": "设置数据重排器"}, {"source": "43", "target": "388", "relation": "启用握手通信"}, {"source": "43", "target": "389", "relation": "启用 I/O 握手通信"}, {"source": "43", "target": "390", "relation": "启用非阻塞发送通信"}, {"source": "43", "target": "391", "relation": "启用非阻塞 I/O 到组件的发送通信"}, {"source": "43", "target": "392", "relation": "设置故障检测模式"}, {"source": "43", "target": "393", "relation": "设置最大挂起请求数"}, {"source": "43", "target": "394", "relation": "设置最大挂起请求数"}, {"source": "43", "target": "395", "relation": "设置通信类型（点对点/集合）"}, {"source": "43", "target": "396", "relation": "设置根任务 ID"}, {"source": "43", "target": "397", "relation": "设置任务 stride"}, {"source": "43", "target": "398", "relation": "设置文件类型（NetCDF 格式）"}]};
+
+// 调试信息
+console.log("图谱数据加载成功:");
+console.log("节点数量:", graph.nodes.length);
+console.log("链接数量:", graph.links.length);
+if (graph.nodes.length > 0) {
+  console.log("第一个节点:", graph.nodes[0]);
+}
+</script>
+
+<script>
+// 全局变量
+let isPerfMode = false;
+let labelsVisible = true;
+let currentSelectedNodeId = null; // 新增：跟踪当前选中的节点ID
+
+// 显示加载状态
+document.getElementById('loading').style.display = 'flex';
+setTimeout(() => {
+  initGraph();
+  document.getElementById('loading').style.display = 'none';
+}, 100);
+
+// 生成丰富的颜色调色板（60种颜色，排除白色和黑色）
+function generateColorPalette() {
+  const colors = [];
+  
+  const baseColors = [
+    '#4361ee', '#3a0ca3', '#4cc9f0', '#f72585', '#7209b7',
+    '#560bad', '#480ca8', '#3f37c9', '#4895ef', '#2a9d8f',
+    '#e9c46a', '#f4a261', '#e76f51', '#264653', '#e63946',
+    '#a8dadc', '#457b9d', '#1d3557', '#ff9f1c', '#ffbf69',
+    '#cbf3f0', '#2ec4b6', '#011627', '#fdfffc', '#e71d36',
+    '#ff006e', '#8338ec', '#3a86ff', '#ffbe0b', '#fb5607',
+    '#ff006e', '#8338ec', '#3a86ff', '#ffbe0b', '#fb5607',
+    '#560bad', '#480ca8', '#3f37c9', '#4895ef', '#4cc9f0',
+    '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51', '#264653',
+    '#e63946', '#a8dadc', '#457b9d', '#1d3557', '#f1faee',
+    '#ff9f1c', '#ffbf69', '#cbf3f0', '#2ec4b6', '#011627',
+    '#fdfffc', '#2ec4b6', '#e71d36', '#ff9f1c', '#2ec4b6'
+  ];
+  
+  for (let i = 0; i < 100; i++) {
+    if (i < baseColors.length) {
+      colors.push(baseColors[i]);
+    } else {
+      const hue = (i * 137) % 360;
+      const saturation = 50 + Math.floor(Math.random() * 40);
+      const lightness = 30 + Math.floor(Math.random() * 50);
+      
+      if (lightness < 90 && lightness > 10) {
+        colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+      }
+    }
+    
+    if (colors.length >= 60) break;
+  }
+  
+  return colors;
+}
+
+const colorPalette = generateColorPalette();
+
+function initGraph() {
+  const svg = d3.select("svg");
+  const w = svg.node().clientWidth;
+  const h = svg.node().clientHeight;
+  const g = svg.append("g");
+  
+  document.getElementById('statsInfo').textContent = `节点: ${graph.nodes.length} | 连接: ${graph.links.length}`;
+
+  // 1. 建立父节点映射和颜色分配
+  const parentNodes = new Set();
+  const parentToChildren = new Map();
+  const childToParent = new Map();
+  
+  graph.nodes.forEach(node => {
+    parentToChildren.set(node.id, []);
+  });
+  
+  graph.links.forEach(link => {
+    parentNodes.add(link.source);
+    if (parentToChildren.has(link.source)) {
+      parentToChildren.get(link.source).push(link.target);
+    }
+    childToParent.set(link.target, link.source);
+  });
+  
+  const parentColors = {};
+  let colorIndex = 0;
+  parentNodes.forEach(parentId => {
+    if (!parentColors[parentId]) {
+      parentColors[parentId] = colorPalette[colorIndex % colorPalette.length];
+      colorIndex++;
+    }
+  });
+  
+  // 2. 为节点分配颜色和标记父节点
+  const nodeParentMap = {};
+  graph.nodes.forEach(node => {
+    node.isParent = parentNodes.has(node.id);
+    
+    if (node.isParent) {
+      node.color = '#ffffff';
+      node.parent = null;
+      nodeParentMap[node.id] = null;
+    } else {
+      let parentId = null;
+      for (const link of graph.links) {
+        if (link.target === node.id) {
+          parentId = link.source;
+          break;
+        }
+      }
+      
+      if (parentId && parentColors[parentId]) {
+        let assignedColor = parentColors[parentId];
+        if (assignedColor.toLowerCase() === '#ffffff' || assignedColor.toLowerCase() === '#fff' || 
+            assignedColor.toLowerCase() === '#000000' || assignedColor.toLowerCase() === '#000') {
+          assignedColor = colorPalette[(colorIndex + 1) % colorPalette.length];
+        }
+        node.color = assignedColor;
+      } else {
+        node.color = '#64748b';
+      }
+      
+      node.parent = parentId;
+      nodeParentMap[node.id] = parentId;
+    }
+  });
+  
+  // 3. 为连接线分配颜色
+  graph.links.forEach(link => {
+    const sourceColor = parentColors[link.source];
+    if (sourceColor && 
+        sourceColor.toLowerCase() !== '#ffffff' && 
+        sourceColor.toLowerCase() !== '#fff' &&
+        sourceColor.toLowerCase() !== '#000000' && 
+        sourceColor.toLowerCase() !== '#000') {
+      link.color = sourceColor;
+    } else {
+      link.color = '#cbd5e1';
+    }
+  });
+
+  // 4. 分层布局
+  const centerX = w / 2;
+  const centerY = h / 2;
+  
+  const parentNodeList = Array.from(parentNodes);
+  const parentRadius = Math.min(w, h) * 0.4;
+  const parentAngleStep = (2 * Math.PI) / Math.max(parentNodeList.length, 1);
+  
+  parentNodeList.forEach((parentId, i) => {
+    const parentNode = graph.nodes.find(n => n.id === parentId);
+    if (parentNode) {
+      const angle = i * parentAngleStep;
+      parentNode.x = centerX + parentRadius * Math.cos(angle);
+      parentNode.y = centerY + parentRadius * Math.sin(angle);
+    }
+  });
+  
+  parentNodeList.forEach((parentId, i) => {
+    const children = parentToChildren.get(parentId) || [];
+    const parentNode = graph.nodes.find(n => n.id === parentId);
+    
+    if (parentNode && children.length > 0) {
+      const childRadius = Math.min(100, 200 / (children.length * 0.3));
+      const childAngleStep = (2 * Math.PI) / children.length;
+      
+      children.forEach((childId, j) => {
+        const childNode = graph.nodes.find(n => n.id === childId);
+        if (childNode && childNode.x === undefined) {
+          const angle = j * childAngleStep;
+          childNode.x = parentNode.x + childRadius * Math.cos(angle);
+          childNode.y = parentNode.y + childRadius * Math.sin(angle);
+        }
+      });
+    }
+  });
+  
+  let orphanIndex = 0;
+  graph.nodes.forEach(node => {
+    if (node.x === undefined) {
+      const orphanRadius = Math.min(w, h) * 0.2;
+      const orphanAngle = (orphanIndex * 2 * Math.PI) / 10;
+      node.x = centerX + orphanRadius * Math.cos(orphanAngle);
+      node.y = centerY + orphanRadius * Math.sin(orphanAngle);
+      orphanIndex++;
+    }
+  });
+
+  // 5. 连接线source/target转换为对象引用
+  const nodeMap = new Map();
+  graph.nodes.forEach(node => nodeMap.set(node.id, node));
+  
+  const processedLinks = graph.links.map(link => {
+    return {
+      source: nodeMap.get(link.source),
+      target: nodeMap.get(link.target),
+      relation: link.relation,
+      color: link.color
+    };
+  }).filter(link => link.source && link.target);
+
+  // 6. 创建力导向模拟
+  const sim = d3.forceSimulation(graph.nodes)
+    .force("link", d3.forceLink(processedLinks)
+      .id(d => d.id)
+      .distance(180)
+      .strength(0.7))
+    .force("charge", d3.forceManyBody()
+      .strength(-400)
+      .distanceMax(500))
+    .force("center", d3.forceCenter(centerX, centerY)
+      .strength(0.03))
+    .force("collision", d3.forceCollide()
+      .radius(35)
+      .strength(0.8))
+    .alphaDecay(0.05)
+    .velocityDecay(0.4)
+    .alphaTarget(0)
+    .alpha(0.3);
+
+  // 7. 创建连接线
+  const link = g.append("g")
+    .selectAll("line")
+    .data(processedLinks)
+    .enter()
+    .append("line")
+    .attr("class", "link")
+    .attr("stroke", d => d.color)
+    .attr("stroke-width", 1.5)
+    .attr("stroke-opacity", 0.6);
+
+  const linkLabel = g.append("g")
+    .selectAll("text")
+    .data(processedLinks)
+    .enter()
+    .append("text")
+    .attr("class", "link-label")
+    .text(d => d.relation)
+    .attr("dy", -4)
+    .style("opacity", 0.7);
+
+  // 8. 创建节点
+  const node = g.append("g")
+    .selectAll("g")
+    .data(graph.nodes)
+    .enter()
+    .append("g")
+    .attr("class", d => `node ${d.isParent ? 'parent' : ''}`)
+    .call(d3.drag()
+      .on("start", dragStarted)
+      .on("drag", dragged)
+      .on("end", dragEnded));
+
+  node.append("circle")
+    .attr("r", d => d.isParent ? 10 : 8)
+    .attr("fill", d => d.color)
+    .attr("stroke", d => d.isParent ? "#000000" : "white")
+    .attr("stroke-width", d => d.isParent ? 2.5 : 1.5);
+
+  const nodeText = node.append("text")
+    .attr("x", d => d.isParent ? 12 : 11)
+    .attr("y", 3)
+    .text(d => {
+      const label = d.label || '';
+      return label.length > 15 ? label.substring(0, 15) + '...' : label;
+    })
+    .attr("font-size", 11)
+    .attr("font-weight", "600");
+
+  // 9. 拖拽函数
+  function dragStarted(event, d) {
+    if (!event.active) sim.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+
+  function dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+
+  function dragEnded(event, d) {
+    if (!event.active) sim.alphaTarget(0);
+  }
+
+  // 10. 节点点击事件
+  node.on("click", function(event, d) {
+    event.stopPropagation();
+    focusNode(d);
+  });
+
+  // 11. 画布点击事件
+  svg.on("click", function() {
+    graph.nodes.forEach(n => {
+      n.fx = null;
+      n.fy = null;
+    });
+    reset();
+    sim.alpha(0.3).restart();
+  });
+
+  // 12. 力导向模拟更新
+  sim.on("tick", () => {
+    link
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
+
+    linkLabel
+      .attr("x", d => (d.source.x + d.target.x) / 2)
+      .attr("y", d => (d.source.y + d.target.y) / 2);
+
+    node.attr("transform", d => `translate(${d.x}, ${d.y})`);
+  });
+
+  // 13. 聚焦节点函数 - 移动到中心但不重叠
+  function focusNode(d) {
+    // 记录当前选中的节点ID
+    currentSelectedNodeId = d.id;
+    
+    // 解除所有节点的固定
+    graph.nodes.forEach(n => {
+      n.fx = null;
+      n.fy = null;
+    });
+    
+    // 计算目标位置（中心）
+    const targetX = centerX;
+    const targetY = centerY;
+    
+    // 计算移动向量
+    const dx = targetX - d.x;
+    const dy = targetY - d.y;
+    
+    // 移动所有节点，保持相对位置，这样不会重叠
+    graph.nodes.forEach(n => {
+      n.x += dx;
+      n.y += dy;
+    });
+    
+    // 固定当前节点在中心位置
+    d.fx = targetX;
+    d.fy = targetY;
+    
+    // 重启模拟
+    sim.alpha(0.5).restart();
+
+    const id = d.id;
+    const neighbors = new Set();
+    
+    processedLinks.forEach(l => {
+      if (l.source.id === id) {
+        neighbors.add(l.target.id);
+      }
+      if (l.target.id === id) {
+        neighbors.add(l.source.id);
+      }
+    });
+
+    node.classed("fade", n => !(n.id === id || neighbors.has(n.id)))
+        .classed("highlight-node", n => n.id === id || neighbors.has(n.id));
+
+    link.classed("fade", l => !(l.source.id === id || l.target.id === id))
+        .classed("highlight-link", l => l.source.id === id || l.target.id === id);
+
+    linkLabel.classed("fade", l => !(l.source.id === id || l.target.id === id))
+             .classed("highlight-label", l => l.source.id === id || l.target.id === id);
+
+    showDetail(id);
+  }
+
+  // 14. 重置高亮
+  function reset() {
+    node.classed("fade", false).classed("highlight-node", false);
+    link.classed("fade", false).classed("highlight-link", false);
+    linkLabel.classed("fade", false).classed("highlight-label", false);
+    
+    // 清除当前选中的节点ID
+    currentSelectedNodeId = null;
+    
+    document.getElementById("relationsSection").style.display = "none";
+    document.getElementById("detail").innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">
+          <i class="fas fa-mouse-pointer"></i>
+        </div>
+        <p class="empty-text">点击图谱中的节点查看详情</p>
+      </div>
+    `;
+  }
+
+  // 15. 显示节点详情 - 修复标签页切换问题
+  function showDetail(id) {
+    const n = graph.nodes.find(x => x.id === id);
+    if (!n) return;
+
+    let html = `
+      <div class="detail-header">
+        <div class="detail-icon ${n.isParent ? 'parent' : ''}" style="background: ${n.isParent ? '#ffffff' : n.color}; ${n.isParent ? 'border: 2px solid #000000;' : ''}">
+          <i class="fas ${n.isParent ? 'fa-star' : 'fa-circle-nodes'}" style="color: ${n.isParent ? '#000000' : 'white'}"></i>
+        </div>
+        <div class="detail-title">
+          <div class="detail-name">${n.label}</div>
+          <div class="detail-id">${n.id} ${n.isParent ? '(父节点)' : ''}</div>
+        </div>
+      </div>
+    `;
+
+    const properties = Object.entries(n.properties || {});
+    if (properties.length > 0) {
+      html += `
+        <div class="properties-section">
+          <div class="section-title">
+            <i class="fas fa-list-check"></i>
+            <span>节点属性</span>
+          </div>
+      `;
+      
+      properties.forEach(([key, value]) => {
+        const displayValue = value && value !== 'nan' && value !== 'NaN' ? value : '无';
+        const truncatedValue = displayValue.length > 100 ? 
+          displayValue.substring(0, 100) + '...' : displayValue;
+        html += `
+          <div class="property-item">
+            <div class="property-key">${key}</div>
+            <div class="property-value">${truncatedValue}</div>
+          </div>
+        `;
+      });
+      
+      html += `</div>`;
+    }
+
+    document.getElementById("detail").innerHTML = html;
+    
+    const relationsSection = document.getElementById("relationsSection");
+    relationsSection.style.display = "flex";
+    
+    // 根据当前激活的标签页更新关系列表
+    updateRelationsForNode(id);
+  }
+
+  // 16. 为节点更新关系列表 - 使用当前选中的节点ID
+  function updateRelationsForNode(id) {
+    if (!id) return;
+    
+    const outRelations = processedLinks.filter(l => l.source.id === id);
+    const inRelations = processedLinks.filter(l => l.target.id === id);
+    
+    // 使用当前激活的标签页
+    const activeTab = document.querySelector('.relation-tab.active');
+    const tabType = activeTab ? activeTab.dataset.tab : 'out';
+    updateRelationsList(tabType === "out" ? outRelations : inRelations, tabType);
+  }
+
+  // 17. 更新关系列表 - 修复出边入边颜色问题
+  function updateRelationsList(relations, type) {
+    const list = document.getElementById("relationsList");
+    list.innerHTML = "";
+    
+    if (relations.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state" style="padding: 16px;">
+          <div class="empty-icon">
+            <i class="fas fa-link-slash"></i>
+          </div>
+          <p class="empty-text">暂无${type === "out" ? "出边" : "入边"}关系</p>
+        </div>
+      `;
+      return;
+    }
+    
+    const displayRelations = relations.slice(0, 50);
+    
+    displayRelations.forEach(l => {
+      const relationItem = document.createElement("div");
+      relationItem.className = `relation-item ${type}`; // 添加出边/入边类
+      
+      const targetNode = graph.nodes.find(n => n.id === (type === "out" ? l.target.id : l.source.id));
+      const targetLabel = targetNode ? 
+        (targetNode.label.length > 20 ? targetNode.label.substring(0, 20) + '...' : targetNode.label) : 
+        (type === "out" ? l.target.id : l.source.id);
+      
+      relationItem.innerHTML = `
+        <div class="relation-direction ${type === "in" ? "in" : ""}">
+          <i class="fas fa-${type === "out" ? "arrow-right" : "arrow-left"}"></i>
+        </div>
+        <div class="relation-content">
+          <div class="relation-type">${l.relation}</div>
+          <div class="relation-target">${targetLabel}</div>
+        </div>
+      `;
+      
+      relationItem.onclick = () => {
+        const targetId = type === "out" ? l.target.id : l.source.id;
+        const targetNode = graph.nodes.find(n => n.id === targetId);
+        if (targetNode) {
+          focusNode(targetNode);
+          
+          // 将目标节点居中
+          const transform = d3.zoomTransform(svg.node());
+          const targetX = targetNode.x * transform.k + transform.x;
+          const targetY = targetNode.y * transform.k + transform.y;
+          
+          svg.transition().duration(800).call(
+            zoom.transform,
+            d3.zoomIdentity
+              .translate(w/2 - targetX, h/2 - targetY)
+              .scale(transform.k)
+          );
+        }
+      };
+      
+      list.appendChild(relationItem);
+    });
+    
+    if (relations.length > 50) {
+      const moreItem = document.createElement("div");
+      moreItem.className = "relation-item";
+      moreItem.innerHTML = `
+        <div class="relation-direction">
+          <i class="fas fa-ellipsis-h"></i>
+        </div>
+        <div class="relation-content">
+          <div class="relation-type">还有 ${relations.length - 50} 个关系未显示</div>
+          <div class="relation-target">点击其他关系查看更多</div>
+        </div>
+      `;
+      list.appendChild(moreItem);
+    }
+  }
+
+  // 18. 设置标签页点击事件 - 使用当前选中的节点ID
+  function setupRelationTabs() {
+    document.querySelectorAll(".relation-tab").forEach(tab => {
+      tab.addEventListener("click", function() {
+        document.querySelectorAll(".relation-tab").forEach(t => t.classList.remove("active"));
+        this.classList.add("active");
+        
+        // 使用当前选中的节点ID更新关系列表
+        if (currentSelectedNodeId) {
+          updateRelationsForNode(currentSelectedNodeId);
+        }
+      });
+    });
+  }
+
+  // 初始化标签页点击事件
+  setupRelationTabs();
+
+  // 19. 增强缩放功能
+  const zoom = d3.zoom()
+    .scaleExtent([0.05, 8])
+    .on("zoom", (e) => {
+      g.attr("transform", e.transform);
+      const scale = e.transform.k;
+      nodeText.attr("font-size", Math.max(11 / scale, 8));
+      linkLabel.attr("font-size", Math.max(10 / scale, 6));
+      
+      if (scale < 0.3 && labelsVisible) {
+        nodeText.style("opacity", 0);
+        linkLabel.style("opacity", 0);
+      } else if (labelsVisible) {
+        nodeText.style("opacity", 1);
+        linkLabel.style("opacity", 0.7);
+      }
+    });
+
+  svg.call(zoom);
+
+  // 20. 初始化缩放控制按钮
+  document.getElementById("zoomIn").addEventListener("click", () => {
+    svg.transition().duration(200).call(zoom.scaleBy, 1.5);
+  });
+
+  document.getElementById("zoomOut").addEventListener("click", () => {
+    svg.transition().duration(200).call(zoom.scaleBy, 0.7);
+  });
+
+  // 21. 重置视图按钮 - 修复：保持选中的节点居中
+  document.getElementById("resetView").addEventListener("click", () => {
+    // 如果当前有选中的节点，将该节点居中
+    if (currentSelectedNodeId) {
+      const selectedNode = graph.nodes.find(n => n.id === currentSelectedNodeId);
+      if (selectedNode) {
+        const transform = d3.zoomTransform(svg.node());
+        const targetX = selectedNode.x * transform.k + transform.x;
+        const targetY = selectedNode.y * transform.k + transform.y;
+        
+        svg.transition().duration(800).call(
+          zoom.transform,
+          d3.zoomIdentity
+            .translate(w/2 - targetX, h/2 - targetY)
+            .scale(transform.k)
+        );
+      }
+    } else {
+      // 如果没有选中的节点，重置到默认视图
+      svg.transition().duration(400).call(
+        zoom.transform,
+        d3.zoomIdentity
+      );
+    }
+  });
+
+  document.getElementById("centerGraph").addEventListener("click", () => {
+    sim.stop();
+    
+    let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+    graph.nodes.forEach(n => {
+      if (n.x < xMin) xMin = n.x;
+      if (n.x > xMax) xMax = n.x;
+      if (n.y < yMin) yMin = n.y;
+      if (n.y > yMax) yMax = n.y;
+    });
+    
+    const chartWidth = Math.max(xMax - xMin, 100);
+    const chartHeight = Math.max(yMax - yMin, 100);
+    const scale = Math.min(w / chartWidth, h / chartHeight) * 0.7;
+    const translateX = (w - chartWidth * scale) / 2 - xMin * scale;
+    const translateY = (h - chartHeight * scale) / 2 - yMin * scale;
+    
+    svg.transition().duration(600).call(
+      zoom.transform,
+      d3.zoomIdentity.translate(translateX, translateY).scale(scale)
+    );
+  });
+
+  // 22. 切换标签可见性
+  document.getElementById("toggleLabels").addEventListener("click", () => {
+    labelsVisible = !labelsVisible;
+    if (labelsVisible) {
+      nodeText.style("display", null);
+      linkLabel.style("display", null);
+      document.getElementById("toggleLabels").innerHTML = '<i class="fas fa-font"></i>';
+      document.getElementById("toggleLabels").title = "隐藏标签";
+    } else {
+      nodeText.style("display", "none");
+      linkLabel.style("display", "none");
+      document.getElementById("toggleLabels").innerHTML = '<i class="fas fa-font-slash"></i>';
+      document.getElementById("toggleLabels").title = "显示标签";
+    }
+  });
+
+  // 23. 搜索功能
+  const fuse = new Fuse(graph.nodes.map(n => ({
+    ...n,
+    searchText: `${n.id} ${n.label} ${Object.values(n.properties || {}).join(" ")}`
+  })), {
+    keys: ["searchText"],
+    threshold: 0.4,
+    includeScore: true,
+    minMatchCharLength: 2,
+    shouldSort: true
+  });
+
+  // 24. 搜索输入事件
+  let searchTimeout;
+  document.getElementById("search").addEventListener("input", e => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      performSearch(e.target.value.trim());
+    }, 150);
+  });
+
+  function performSearch(query) {
+    const resultsContainer = document.getElementById("results");
+    const resultsCount = document.getElementById("resultsCount");
+    
+    resultsContainer.innerHTML = "";
+    
+    if (!query) {
+      resultsCount.textContent = "0";
+      return;
+    }
+    
+    const searchResults = fuse.search(query);
+    resultsCount.textContent = searchResults.length;
+    
+    if (searchResults.length === 0) {
+      resultsContainer.innerHTML = `
+        <div class="empty-state" style="padding: 20px;">
+          <div class="empty-icon">
+            <i class="fas fa-search"></i>
+          </div>
+          <p class="empty-text">未找到匹配的节点</p>
+        </div>
+      `;
+      return;
+    }
+    
+    const groupedResults = {};
+    
+    searchResults.forEach(result => {
+      const parentId = nodeParentMap[result.item.id] || 'ungrouped';
+      if (!groupedResults[parentId]) {
+        groupedResults[parentId] = [];
+      }
+      groupedResults[parentId].push(result);
+    });
+    
+    const getParentName = (parentId) => {
+      if (parentId === 'ungrouped') return '未分组';
+      const parentNode = graph.nodes.find(n => n.id === parentId);
+      return parentNode ? parentNode.label : parentId;
+    };
+    
+    Object.keys(groupedResults).forEach(parentId => {
+      const group = groupedResults[parentId];
+      const parentName = getParentName(parentId);
+      const parentColor = parentId === 'ungrouped' ? '#94a3b8' : 
+                         (parentColors[parentId] && parentColors[parentId].toLowerCase() !== '#ffffff' ? 
+                          parentColors[parentId] : '#94a3b8');
+      
+      const groupHeader = document.createElement("div");
+      groupHeader.className = "group-header";
+      groupHeader.innerHTML = `
+        <div class="group-color" style="background: ${parentColor}"></div>
+        <div class="group-title">${parentName}</div>
+        <div class="group-count">${group.length}</div>
+      `;
+      
+      const groupContainer = document.createElement("div");
+      groupContainer.className = "results-group";
+      groupContainer.appendChild(groupHeader);
+      
+      group.slice(0, 20).forEach(result => {
+        const item = document.createElement("div");
+        item.className = `result-item ${result.item.isParent ? 'parent' : ''}`;
+        
+        const isParent = result.item.isParent;
+        const bgColor = isParent ? '#ffffff' : result.item.color;
+        const textColor = isParent ? '#000000' : 'white';
+        const borderStyle = isParent ? 'border: 2px solid #000000;' : '';
+        
+        item.innerHTML = `
+          <div class="result-icon" style="background: ${bgColor}; ${borderStyle}">
+            <i class="fas ${isParent ? 'fa-star' : 'fa-circle'}" style="color: ${textColor}"></i>
+          </div>
+          <div class="result-content">
+            <div class="result-name">${result.item.label}</div>
+            <div class="result-id">${result.item.id} ${isParent ? '(父节点)' : ''}</div>
+          </div>
+        `;
+        
+        item.onclick = () => {
+          focusNode(result.item);
+          const transform = d3.zoomTransform(svg.node());
+          const targetX = result.item.x * transform.k + transform.x;
+          const targetY = result.item.y * transform.k + transform.y;
+          
+          svg.transition().duration(800).call(
+            zoom.transform,
+            d3.zoomIdentity
+              .translate(w/2 - targetX, h/2 - targetY)
+              .scale(transform.k * 1.2)
+          );
+        };
+        
+        groupContainer.appendChild(item);
+      });
+      
+      if (group.length > 20) {
+        const moreItem = document.createElement("div");
+        moreItem.className = "result-item";
+        moreItem.style.opacity = 0.7;
+        moreItem.innerHTML = `
+          <div class="result-icon" style="background: #94a3b8">
+            <i class="fas fa-ellipsis-h"></i>
+          </div>
+          <div class="result-content">
+            <div class="result-name">还有 ${group.length - 20} 个节点未显示</div>
+            <div class="result-id">继续输入更精确的搜索词</div>
+          </div>
+        `;
+        groupContainer.appendChild(moreItem);
+      }
+      
+      resultsContainer.appendChild(groupContainer);
+    });
+  }
+
+  // 25. 初始居中图表
+  setTimeout(() => {
+    document.getElementById("centerGraph").click();
+    setTimeout(() => {
+      sim.stop();
+    }, 8000);
+  }, 800);
+
+  // 26. 性能优化：减少事件监听器
+  window.addEventListener('resize', () => {
+    clearTimeout(window.resizeTimer);
+    window.resizeTimer = setTimeout(() => {
+      document.getElementById("centerGraph").click();
+    }, 250);
+  });
+
+  // 27. 将函数暴露给全局作用域以便调试
+  window.focusNode = focusNode;
+  window.resetView = () => document.getElementById("resetView").click();
+  window.centerGraph = () => document.getElementById("centerGraph").click();
+}
+
+// 性能优化：使用requestAnimationFrame
+let lastRenderTime = 0;
+const targetFPS = 30;
+const frameInterval = 1000 / targetFPS;
+
+function render(currentTime) {
+  requestAnimationFrame(render);
+  
+  const deltaTime = currentTime - lastRenderTime;
+  if (deltaTime < frameInterval) return;
+  
+  lastRenderTime = currentTime - (deltaTime % frameInterval);
+}
+
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
